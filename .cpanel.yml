@@ -1,0 +1,8 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/$(whoami)/coresync
+    - /bin/cp -r . $DEPLOYPATH
+    - cd $DEPLOYPATH && pip install --user -r requirements.txt --quiet
+    - cd $DEPLOYPATH && python manage.py migrate --noinput
+    - cd $DEPLOYPATH && python manage.py collectstatic --noinput
