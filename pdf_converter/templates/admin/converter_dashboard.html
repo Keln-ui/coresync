@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Converter Operations Control Center — CoreSynch{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace small mb-1">CONVERTER OPERATIONS</span>
+            <h1 class="fw-bold text-dark mb-1">Converter Control Center</h1>
+            <p class="text-muted small mb-0">Live monitoring of file conversions, M-Pesa collections, and user throughput.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary rounded-pill px-3 py-2 btn-sm" href="{% url 'admin:index' %}">
+                <i class="bi bi-gear-fill me-1"></i> Django Admin
+            </a>
+            <a class="btn btn-primary rounded-pill px-3 py-2 btn-sm" href="{% url 'index' %}">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Converter Portal
+            </a>
+        </div>
+    </div>
+
+    <!-- Stat Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Total Conversions</div>
+                    <div class="stat-number-modern">{{ total_conversions }}</div>
+                </div>
+                <div class="stat-icon-wrapper stat-indigo">
+                    <i class="bi bi-file-earmark-arrow-up-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Paid Transactions</div>
+                    <div class="stat-number-modern">{{ total_payments }}</div>
+                </div>
+                <div class="stat-icon-wrapper stat-emerald">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Gross Revenue</div>
+                    <div class="stat-number-modern" style="font-size: 1.55rem;">KSH {{ total_revenue|floatformat:0 }}</div>
+                </div>
+                <div class="stat-icon-wrapper stat-sky">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Active Users</div>
+                    <div class="stat-number-modern">{{ active_users }}</div>
+                </div>
+                <div class="stat-icon-wrapper stat-amber">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Conversions -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4 h-100">
+                <h5 class="fw-bold mb-3 text-dark">
+                    <i class="bi bi-clock-history text-primary me-2"></i> Recent Document Conversions
+                </h5>
+                <div class="saas-table-wrapper border">
+                    <table class="saas-table">
+                        <thead>
+                            <tr>
+                                <th>Original File</th>
+                                <th>Format</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for conversion in recent_conversions %}
+                            <tr>
+                                <td>
+                                    <strong class="text-dark small d-block" style="word-break: break-all;">
+                                        {{ conversion.original_pdf_filename|truncatechars:28 }}
+                                    </strong>
+                                </td>
+                                <td><span class="badge bg-light text-secondary border small">{{ conversion.output_format|upper }}</span></td>
+                                <td>
+                                    {% if conversion.status == 'completed' %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small">Completed</span>
+                                    {% elif conversion.status == 'failed' %}
+                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1 small">Failed</span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1 small">Processing</span>
+                                    {% endif %}
+                                </td>
+                                <td><small class="text-muted">{{ conversion.created_at|date:"M j, Y H:i" }}</small></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">No conversions recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Operations & Settings Controls -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4 h-100">
+                <h5 class="fw-bold mb-3 text-dark">
+                    <i class="bi bi-sliders text-warning me-2"></i> Operations &amp; Pricing Controls
+                </h5>
+                <p class="small text-muted mb-3">
+                    <strong>{{ pending_payments_count }}</strong> payments pending &middot; <strong>{{ processing_conversions }}</strong> conversions in progress
+                </p>
+
+                <div class="d-grid gap-2 mb-4">
+                    <a class="btn btn-primary rounded-pill py-2" href="{% url 'admin_payment_settings' %}">
+                        <i class="bi bi-toggles me-1"></i> Payment &amp; Free Period Settings
+                    </a>
+                    <a class="btn btn-outline-primary rounded-pill py-2" href="{% url 'admin_plans_list' %}">
+                        <i class="bi bi-credit-card me-1"></i> Manage Subscription Plans
+                    </a>
+                    <a class="btn btn-outline-secondary rounded-pill py-2" href="/admin/pdf_converter/convertedfile/">
+                        <i class="bi bi-folder2-open me-1"></i> Database: All Conversions
+                    </a>
+                    <a class="btn btn-outline-secondary rounded-pill py-2" href="/admin/pdf_converter/payment/">
+                        <i class="bi bi-cash-coin me-1"></i> Database: M-Pesa Logs
+                    </a>
+                </div>
+
+                <h6 class="fw-bold text-dark mb-2 border-bottom pb-2">Pending Payments Queue</h6>
+                <ul class="list-group list-group-flush">
+                    {% for payment in pending_payments %}
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="text-dark small d-block">{{ payment.phone_number }}</strong>
+                            <small class="text-muted">{{ payment.created_at|date:"M j, Y H:i" }}</small>
+                        </div>
+                        <span class="badge bg-warning-subtle text-warning rounded-pill px-3 py-1">KSH {{ payment.amount }}</span>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item px-0 text-muted small py-3 text-center">No pending payments in queue.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

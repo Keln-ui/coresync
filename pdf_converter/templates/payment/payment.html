@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Complete Payment — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 bg-white">
+                <div class="text-center mb-4">
+                    <div class="stat-icon-wrapper stat-emerald mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.75rem;">
+                        <i class="bi bi-credit-card-2-front-fill"></i>
+                    </div>
+                    <span class="converter-badge-new">Order Checkout</span>
+                    <h2 class="fw-bold text-dark mb-1">Download Your Converted Document</h2>
+                    <p class="text-muted small">Complete the KSH 2/page micro-payment via Safaricom M-Pesa to download your file.</p>
+                </div>
+
+                <!-- Order Summary Alert -->
+                <div class="p-4 bg-light rounded-4 border mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Source Document:</span>
+                        <strong class="text-dark small text-truncate" style="max-width: 220px;">{{ conversion.original_pdf_filename }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Total Page Count:</span>
+                        <strong class="text-dark small">{{ page_count }} page{% if page_count != 1 %}s{% endif %}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Rate per Page:</span>
+                        <strong class="text-dark small">KSH {{ cost_per_page }}</strong>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-dark">Total Amount Due:</span>
+                        <span class="display-6 fw-bold text-primary" style="font-size: 1.85rem;">KSH {{ total_cost }}</span>
+                    </div>
+                </div>
+
+                <form id="paymentForm" data-conversion-id="{{ conversion.id }}" data-total-cost="{{ total_cost }}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="phoneNumber" class="form-label fw-bold text-dark small">
+                            <i class="bi bi-phone text-muted me-1"></i> Safaricom M-Pesa Phone Number
+                        </label>
+                        <input type="tel" class="form-control form-control-lg rounded-3 py-2" id="phoneNumber" 
+                               placeholder="254712345678" pattern="254[0-9]{9}" required>
+                        <div class="form-text small">Enter your phone number in international format starting with 254 (e.g. 254712345678)</div>
+                    </div>
+
+                    <div class="p-3 bg-warning-subtle text-warning-emphasis rounded-3 border-0 small mb-4 d-flex align-items-start gap-2">
+                        <i class="bi bi-info-circle-fill fs-5 flex-shrink-0 text-warning"></i>
+                        <div>An instant STK Push prompt will be delivered to your phone. Enter your secret M-Pesa PIN to approve.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 py-3 rounded-pill fw-bold shadow-sm" id="payBtn">
+                        <i class="bi bi-phone me-2"></i> Pay KSH {{ total_cost }} via M-Pesa
+                    </button>
+                </form>
+
+                <div id="paymentStatus" class="mt-4" style="display: none;">
+                    <div class="alert alert-info border-0 rounded-4 shadow-sm p-4 text-center">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
+                        <h6 class="fw-bold text-dark mb-1">Awaiting M-Pesa PIN Confirmation</h6>
+                        <span id="statusMessage" class="text-muted small">Please check your handset screen…</span>
+                    </div>
+                </div>
+
+                <div id="paymentError" class="mt-4" style="display: none;">
+                    <div class="alert alert-danger border-0 rounded-4 shadow-sm p-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill fs-4 text-danger"></i>
+                        <span id="errorMessage" class="small"></span>
+                    </div>
+                </div>
+
+                <!-- How it works -->
+                <div class="pt-4 border-top mt-4">
+                    <h6 class="fw-bold small text-dark mb-2"><i class="bi bi-question-circle-fill text-muted me-1"></i> Quick Step Guide</h6>
+                    <ol class="small text-muted ps-3 mb-0">
+                        <li>Enter your Safaricom phone number above.</li>
+                        <li>Click "Pay via M-Pesa".</li>
+                        <li>Promptly input your PIN on your mobile device.</li>
+                        <li>Your download begins automatically immediately upon approval.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const paymentForm = document.getElementById('paymentForm');
+const payBtn = document.getElementById('payBtn');
+const paymentStatus = document.getElementById('paymentStatus');
+const paymentError = document.getElementById('paymentError');
+const statusMessage = document.getElementById('statusMessage');
+const errorMessage = document.getElementById('errorMessage');
+
+const conversionId = parseInt(paymentForm.dataset.conversionId, 10);
+const totalCost = parseFloat(paymentForm.dataset.totalCost);
+
+paymentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    let phoneNumber = document.getElementById('phoneNumber').value.trim();
+    if (phoneNumber.startsWith('0')) {
+        phoneNumber = '254' + phoneNumber.substring(1);
+    }
+    
+    if (!phoneNumber || !phoneNumber.match(/^254[0-9]{9}$/)) {
+        showError('Please enter a valid M-Pesa phone number (e.g., 254712345678)');
+        return;
+    }
+    
+    payBtn.disabled = true;
+    payBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Initiating STK Push…';
+    paymentStatus.style.display = 'block';
+    paymentError.style.display = 'none';
+    statusMessage.textContent = 'Contacting Safaricom M-Pesa gateway…';
+    
+    try {
+        const response = await fetch('/payment/initiate/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                conversion_id: conversionId,
+                phone_number: phoneNumber
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            statusMessage.textContent = data.message || 'Payment prompt sent to your phone. Please enter your PIN.';
+            pollPaymentStatus(data.payment_id);
+        } else {
+            showError(data.error || 'Payment initiation failed. Please check phone number and retry.');
+            payBtn.disabled = false;
+            payBtn.innerHTML = '<i class="bi bi-phone"></i> Pay KSH ' + totalCost + ' via M-Pesa';
+            paymentStatus.style.display = 'none';
+        }
+    } catch (error) {
+        showError('A connection error occurred. Please verify your internet and try again.');
+        payBtn.disabled = false;
+        payBtn.innerHTML = '<i class="bi bi-phone"></i> Pay KSH ' + totalCost + ' via M-Pesa';
+        paymentStatus.style.display = 'none';
+    }
+});
+
+async function pollPaymentStatus(paymentId) {
+    const maxAttempts = 30;
+    let attempts = 0;
+    
+    const interval = setInterval(async () => {
+        attempts++;
+        
+        try {
+            const response = await fetch('/payment/status/' + paymentId + '/');
+            const data = await response.json();
+            
+            if (data.status === 'completed') {
+                clearInterval(interval);
+                statusMessage.textContent = 'Payment confirmed! Preparing your download…';
+                setTimeout(() => {
+                    window.location.href = '/payment/success/' + conversionId + '/';
+                }, 1200);
+            } else if (data.status === 'failed') {
+                clearInterval(interval);
+                showError('Payment cancelled or rejected. Please try again.');
+                payBtn.disabled = false;
+                payBtn.innerHTML = '<i class="bi bi-phone"></i> Pay KSH ' + totalCost + ' via M-Pesa';
+                paymentStatus.style.display = 'none';
+            } else if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                showError('Payment confirmation timed out. Please check your SMS or contact support.');
+                payBtn.disabled = false;
+                payBtn.innerHTML = '<i class="bi bi-phone"></i> Pay KSH ' + totalCost + ' via M-Pesa';
+                paymentStatus.style.display = 'none';
+            } else {
+                statusMessage.textContent = 'Waiting for your M-Pesa PIN approval (' + (attempts * 10) + 's)…';
+            }
+        } catch (error) {
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                showError('Unable to verify transaction. Check your M-Pesa messages.');
+                payBtn.disabled = false;
+                payBtn.innerHTML = '<i class="bi bi-phone"></i> Pay KSH ' + totalCost + ' via M-Pesa';
+                paymentStatus.style.display = 'none';
+            }
+        }
+    }, 10000);
+}
+
+function showError(message) {
+    errorMessage.textContent = message;
+    paymentError.style.display = 'block';
+}
+</script>
+{% endblock %}

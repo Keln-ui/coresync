@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Account Settings — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="mb-4">
+        {% if institution_only %}
+        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace small mb-1">INSTITUTION DETAILS</span>
+        <h1 class="fw-bold text-dark mb-1">Enter Institution Details</h1>
+        <p class="text-muted small">Complete these details before downloading or generating a scheme of work. They will appear on the first page.</p>
+        {% else %}
+        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace small mb-1">ACCOUNT SETTINGS</span>
+        <h1 class="fw-bold text-dark mb-1">Edit Account Profile</h1>
+        <p class="text-muted small">Update your personal account credentials, email, and password security.</p>
+        {% endif %}
+    </div>
+
+    <div class="row g-4">
+        <!-- Profile Info Card -->
+        {% if not institution_only %}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4 text-center">
+                <div class="stat-icon-wrapper stat-indigo mx-auto mb-3" style="width: 72px; height: 72px; font-size: 2rem;">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <h5 class="fw-bold mb-1 text-dark">{{ user.username }}</h5>
+                <p class="text-muted small mb-3">{{ user.email|default:"No email registered" }}</p>
+                
+                {% if school_profile %}
+                <div class="alert alert-info border-0 rounded-3 text-start small mb-3">
+                    <i class="bi bi-building me-1"></i> <strong>School Account</strong><br>
+                    {{ school_profile.school_name }}
+                </div>
+                {% endif %}
+
+                <div class="pt-3 border-top text-start">
+                    <small class="text-muted d-block mb-1">Account Role</small>
+                    <span class="badge bg-light text-secondary border small">
+                        {% if user.is_staff %}Staff Administrator{% else %}Standard User{% endif %}
+                    </span>
+                    <small class="text-muted d-block mt-3 mb-1">Member Since</small>
+                    <small class="fw-semibold text-dark">{{ user.date_joined|date:"F j, Y" }}</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Edit Forms Column -->
+        <div class="{% if institution_only %}col-lg-8 mx-auto{% else %}col-lg-8{% endif %}">
+            <div class="d-flex flex-column gap-4">
+                <!-- School Details -->
+                <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-3">
+                        <div class="stat-icon-wrapper stat-indigo" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">Institution Details</h5>
+                            <small class="text-muted">Name, address, contact, and principal details</small>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{% url 'edit_profile' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_school_details">
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-dark small">School Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control py-2 rounded-3" name="school_name" value="{{ school_profile.school_name|default:'' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-dark small">Phone Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control py-2 rounded-3" name="phone" value="{{ school_profile.phone|default:'' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-dark small">School Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control py-2 rounded-3" name="email" value="{{ school_profile.email|default:user.email }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-dark small">Principal's Name</label>
+                                <input type="text" class="form-control py-2 rounded-3" name="principal_name" value="{{ school_profile.principal_name|default:'' }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-dark small">School Address</label>
+                                <textarea class="form-control rounded-3" name="school_address" rows="2">{{ school_profile.school_address|default:'' }}</textarea>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 py-2">
+                                    <i class="bi bi-building-check me-1"></i> Save School Details
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                {% if not institution_only %}
+                <!-- Update Email -->
+                <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-3">
+                        <div class="stat-icon-wrapper stat-indigo" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                            <i class="bi bi-envelope"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">Email Address</h5>
+                            <small class="text-muted">Primary communication and notification address</small>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{% url 'edit_profile' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_email">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark small">New Email Address</label>
+                            <input type="email" class="form-control py-2 rounded-3" name="email" value="{{ user.email }}" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 py-2">
+                            <i class="bi bi-check2-circle me-1"></i> Save Email
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Update Username -->
+                <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-3">
+                        <div class="stat-icon-wrapper stat-amber" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">Account Username</h5>
+                            <small class="text-muted">Unique identifier displayed in dashboards and reports</small>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{% url 'edit_profile' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_username">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark small">New Username</label>
+                            <input type="text" class="form-control py-2 rounded-3" name="username" value="{{ user.username }}" required minlength="3" maxlength="150">
+                            <small class="text-muted">Must be between 3 and 150 alphanumeric characters.</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-outline-warning text-dark border rounded-pill px-4 py-2">
+                            <i class="bi bi-check2-circle me-1"></i> Update Username
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Update Password -->
+                <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-3">
+                        <div class="stat-icon-wrapper stat-sky" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                            <i class="bi bi-shield-lock"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">Security Password</h5>
+                            <small class="text-muted">Choose a strong, unique password</small>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{% url 'edit_profile' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_password">
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-dark small">Current Password</label>
+                                <input type="password" class="form-control py-2 rounded-3" name="current_password" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-dark small">New Password</label>
+                                <input type="password" class="form-control py-2 rounded-3" name="new_password" required minlength="8">
+                                <small class="text-muted">Minimum 8 characters.</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-dark small">Confirm New Password</label>
+                                <input type="password" class="form-control py-2 rounded-3" name="confirm_password" required minlength="8">
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <button type="submit" class="btn btn-danger rounded-pill px-4 py-2">
+                                    <i class="bi bi-shield-check me-1"></i> Change Password
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="text-start">
+                    <a href="{% url 'user_profile' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Profile
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

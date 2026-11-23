@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}BOM Teaching Jobs in Kenya — CoreSynch{% endblock %}
+
+{% block content %}
+<!-- Jobs Header -->
+<section class="jobs-detail-header-new">
+  <div class="container">
+    <div class="jobs-detail-content-new">
+      <span class="jobs-detail-badge-new"><i class="bi bi-briefcase-fill me-1"></i> Board of Management</span>
+      <h1 class="jobs-detail-title-new">BOM Teaching Opportunities</h1>
+      <p class="jobs-detail-desc-new">Connect with public and private secondary schools across Kenya recruiting qualified teachers on BOM contracts.</p>
+      
+      <div class="d-flex justify-content-center gap-2 mt-4">
+        <a href="{% url 'post_job' %}" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold">
+          <i class="bi bi-plus-circle me-1"></i> Post a Teaching Opening
+        </a>
+        <a href="{% url 'homeschooling_jobs' %}" class="btn btn-outline-secondary rounded-pill px-4 py-2">
+          View Homeschooling Jobs
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Job Listings Section -->
+<section class="jobs-listing-section-new">
+  <div class="container">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <div>
+        <h2 class="fw-bold mb-1 text-dark" style="font-size: 1.75rem;">Current BOM Vacancies</h2>
+        <p class="text-muted small mb-0">Browse verified positions across all 47 counties</p>
+      </div>
+      <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace">
+        {% if jobs %}{{ jobs|length }} Active Openings{% else %}Open Listings{% endif %}
+      </span>
+    </div>
+
+    <div class="jobs-listing-grid-new">
+      {% if jobs %}
+        {% for job in jobs %}
+        <div class="job-listing-card-new">
+          <div class="job-listing-header-new">
+            <span class="job-listing-type-new">{{ job.get_employment_type_display|default:"Full-Time" }}</span>
+            <span class="job-listing-location-new"><i class="bi bi-geo-alt-fill text-danger"></i> {{ job.location }}</span>
+          </div>
+          <h3 class="job-listing-title-new">{{ job.title }}</h3>
+          <p class="job-listing-school-new">{{ job.school_name }}</p>
+          <div class="small text-muted mb-3 flex-grow-1">
+            {{ job.description|linebreaksbr }}
+          </div>
+          {% if job.requirements %}
+          <div class="p-2 bg-light rounded-3 mb-3 small">
+            <strong class="d-block text-dark mb-1">Requirements:</strong>
+            <span class="text-muted">{{ job.requirements|truncatechars:120 }}</span>
+          </div>
+          {% endif %}
+          <div class="job-listing-footer-new">
+            <span class="job-listing-salary-new">{{ job.salary_range|default:"Negotiable" }}</span>
+            <a href="mailto:{{ job.contact_email }}?subject=Application for {{ job.title|urlencode }}" class="job-listing-apply-new">
+              Apply via Email <i class="bi bi-arrow-right-short"></i>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <!-- Sample High-Quality BOM Openings if Database is freshly initialized -->
+        <div class="job-listing-card-new">
+          <div class="job-listing-header-new">
+            <span class="job-listing-type-new">Secondary School</span>
+            <span class="job-listing-location-new"><i class="bi bi-geo-alt-fill text-danger"></i> Nairobi</span>
+          </div>
+          <h3 class="job-listing-title-new">Mathematics &amp; Physics Teacher</h3>
+          <p class="job-listing-school-new">St. Mary's Secondary School</p>
+          <ul class="job-listing-requirements-new">
+            <li><i class="bi bi-check-circle-fill"></i> Bachelor of Education (Science)</li>
+            <li><i class="bi bi-check-circle-fill"></i> TSC registration preferred</li>
+            <li><i class="bi bi-check-circle-fill"></i> 2+ years secondary teaching experience</li>
+          </ul>
+          <div class="job-listing-footer-new">
+            <span class="job-listing-salary-new">KSH 35,000 – 45,000 / mo</span>
+            <a href="mailto:careers@stmarys.ac.ke" class="job-listing-apply-new">Apply Now</a>
+          </div>
+        </div>
+
+        <div class="job-listing-card-new">
+          <div class="job-listing-header-new">
+            <span class="job-listing-type-new">Junior Secondary</span>
+            <span class="job-listing-location-new"><i class="bi bi-geo-alt-fill text-danger"></i> Kiambu</span>
+          </div>
+          <h3 class="job-listing-title-new">Integrated Science &amp; Agriculture</h3>
+          <p class="job-listing-school-new">Highland Comprehensive School</p>
+          <ul class="job-listing-requirements-new">
+            <li><i class="bi bi-check-circle-fill"></i> Diploma or Degree in Education</li>
+            <li><i class="bi bi-check-circle-fill"></i> CBC Junior Secondary trained</li>
+            <li><i class="bi bi-check-circle-fill"></i> Strong practical skills</li>
+          </ul>
+          <div class="job-listing-footer-new">
+            <span class="job-listing-salary-new">KSH 30,000 – 40,000 / mo</span>
+            <a href="mailto:info@highland.sc.ke" class="job-listing-apply-new">Apply Now</a>
+          </div>
+        </div>
+
+        <div class="job-listing-card-new">
+          <div class="job-listing-header-new">
+            <span class="job-listing-type-new">Secondary School</span>
+            <span class="job-listing-location-new"><i class="bi bi-geo-alt-fill text-danger"></i> Nakuru</span>
+          </div>
+          <h3 class="job-listing-title-new">English &amp; Literature Teacher</h3>
+          <p class="job-listing-school-new">Rift Valley Girls Secondary</p>
+          <ul class="job-listing-requirements-new">
+            <li><i class="bi bi-check-circle-fill"></i> Bachelor of Arts with Education</li>
+            <li><i class="bi bi-check-circle-fill"></i> Proven track record in KCSE / CBC</li>
+            <li><i class="bi bi-check-circle-fill"></i> Good communication and guidance skills</li>
+          </ul>
+          <div class="job-listing-footer-new">
+            <span class="job-listing-salary-new">KSH 32,000 – 42,000 / mo</span>
+            <a href="mailto:jobs@rvgirls.sc.ke" class="job-listing-apply-new">Apply Now</a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Post Job Banner -->
+    <div class="p-5 mt-5 bg-white rounded-4 border shadow-sm text-center max-w-700 mx-auto">
+      <div class="stat-icon-wrapper stat-indigo mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.5rem;">
+        <i class="bi bi-megaphone-fill"></i>
+      </div>
+      <h4 class="fw-bold text-dark mb-2">Are You Hiring Teachers for Your School?</h4>
+      <p class="text-muted small mb-4">Post your BOM vacancy and reach thousands of verified Kenyan teachers and graduates on CoreSynch.</p>
+      <a href="{% url 'post_job' %}" class="btn btn-primary rounded-pill px-4 py-2">
+        <i class="bi bi-plus-circle-fill me-1"></i> Submit a Job Vacancy
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

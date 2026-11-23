@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Confirmed — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 bg-white text-center">
+                <div class="stat-icon-wrapper stat-emerald mx-auto mb-3" style="width: 72px; height: 72px; font-size: 2.25rem;">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <span class="converter-badge-new"><i class="bi bi-patch-check-fill me-1"></i> Transaction Verified</span>
+                <h2 class="fw-bold text-dark mb-2">Payment Confirmed!</h2>
+                <p class="text-muted lead mb-4">We received your payment of <strong class="text-dark">KSH {{ conversion.cost }}</strong> via Safaricom M-Pesa.</p>
+
+                {% if conversion.mpesa_receipt %}
+                <div class="p-3 bg-light rounded-3 border mb-4 font-monospace small">
+                    <span class="text-muted">M-Pesa Receipt Code:</span>
+                    <strong class="text-dark d-block mt-1">{{ conversion.mpesa_receipt }}</strong>
+                </div>
+                {% endif %}
+
+                <div class="p-4 bg-success-subtle rounded-4 mb-4 border border-success-subtle">
+                    <i class="bi bi-file-earmark-check-fill text-success fs-1 mb-2 d-block"></i>
+                    <h5 class="fw-bold text-success mb-1">Your File is Ready!</h5>
+                    <p class="text-muted small mb-3" style="word-break: break-all;">{{ conversion.original_pdf_filename }}</p>
+                    
+                    {% if has_file %}
+                    <a href="{{ conversion.converted_file.url }}" class="btn btn-success rounded-pill px-4 py-3 fw-bold w-100 shadow-sm" download>
+                        <i class="bi bi-download me-2"></i> Download Converted File
+                    </a>
+                    {% else %}
+                    <p class="small text-muted mb-0">Your file is finalizing processing. You can also retrieve it anytime from your <a href="{% url 'conversion_history' %}" class="fw-bold">conversion history</a>.</p>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'index' %}" class="btn btn-outline-primary rounded-pill px-4">
+                        <i class="bi bi-arrow-repeat me-1"></i> Convert Another File
+                    </a>
+                    <a href="{% url 'user_dashboard' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

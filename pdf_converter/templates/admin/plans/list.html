@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Subscription Plans — Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace small mb-1">PRICING TIERS</span>
+            <h1 class="fw-bold text-dark mb-1">Subscription Plans</h1>
+            <p class="text-muted small mb-0">Configure the subscription tiers available for school and individual accounts.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'admin_dashboard_custom' %}" class="btn btn-outline-secondary rounded-pill px-3 py-2 btn-sm">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
+            <a href="{% url 'admin_plan_add' %}" class="btn btn-primary rounded-pill px-3 py-2 btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> Add New Plan
+            </a>
+        </div>
+    </div>
+
+    <!-- Plans Table -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+        {% if plans %}
+        <div class="saas-table-wrapper border">
+            <table class="saas-table">
+                <thead>
+                    <tr>
+                        <th>Plan Name</th>
+                        <th>Duration</th>
+                        <th>Amount</th>
+                        <th>Max Teachers</th>
+                        <th>Max Classes</th>
+                        <th>Status</th>
+                        <th>Subscribers</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans %}
+                    <tr>
+                        <td>
+                            <strong class="text-dark small d-block">{{ plan.name }}</strong>
+                            {% if plan.description %}
+                            <small class="text-muted">{{ plan.description|truncatechars:40 }}</small>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-light text-secondary border small">{{ plan.get_duration_display }}</span></td>
+                        <td><strong class="text-dark small">KSH {{ plan.amount|floatformat:0 }}</strong></td>
+                        <td>{{ plan.max_teachers|default:"Unlimited" }}</td>
+                        <td>{{ plan.max_classes|default:"Unlimited" }}</td>
+                        <td>
+                            {% if plan.is_active %}
+                                <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1 small">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border small">{{ plan.schoolsubscription_set.count }}</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'admin_plan_edit' plan.id %}" class="btn btn-outline-primary" title="Edit Plan">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'admin_plan_toggle' plan.id %}" class="btn btn-outline-warning" title="Toggle Active">
+                                    <i class="bi bi-power"></i>
+                                </a>
+                                <a href="{% url 'admin_plan_delete' plan.id %}" class="btn btn-outline-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-credit-card display-5 text-muted opacity-50 d-block mb-3"></i>
+            <h6 class="fw-bold text-dark">No Subscription Plans Configured</h6>
+            <p class="text-muted small mb-3">Add your first termly or yearly pricing plan.</p>
+            <a href="{% url 'admin_plan_add' %}" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-plus-lg me-1"></i> Add First Plan
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if plans %}
+    <!-- Summary KPI cards -->
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Total Plans</div>
+                    <div class="stat-number-modern">{{ plans|length }}</div>
+                </div>
+                <div class="stat-icon-wrapper stat-indigo">
+                    <i class="bi bi-layers-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Active Tiers</div>
+                    <div class="stat-number-modern">{{ plans|length }}</div>
+                </div>
+                <div class="stat-icon-wrapper stat-emerald">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Base Entry Tier</div>
+                    <div class="stat-number-modern" style="font-size: 1.55rem;">
+                        {% with first_plan=plans|first %}
+                        KSH {{ first_plan.amount|floatformat:0 }}
+                        {% endwith %}
+                    </div>
+                </div>
+                <div class="stat-icon-wrapper stat-sky">
+                    <i class="bi bi-tag-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

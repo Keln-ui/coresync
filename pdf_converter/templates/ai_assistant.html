@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Assistant — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 980px;">
+    <div class="mb-4">
+        <span class="badge rounded-pill text-bg-primary mb-2"><i class="bi bi-stars me-1"></i> Powered by Gemini</span>
+        <h1 class="fw-bold">CoreSynch AI Assistant</h1>
+        <p class="text-secondary mb-0">Get help with documents, study topics, scheme drafts, and everyday questions.</p>
+    </div>
+
+    {% if not ai_configured %}
+    <div class="alert alert-warning border-0 rounded-3">
+        <strong>AI is not configured.</strong> Set <code>GEMINI_API_KEY</code> in the server environment and restart the app to enable responses.
+    </div>
+    {% endif %}
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-4"><div class="h-100 rounded-4 border bg-white p-3"><i class="bi bi-file-earmark-text text-primary fs-4"></i><div class="fw-semibold mt-2">Document Q&amp;A</div><small class="text-secondary">Ask questions about PDF, DOCX, or TXT files.</small></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="h-100 rounded-4 border bg-white p-3"><i class="bi bi-mortarboard text-success fs-4"></i><div class="fw-semibold mt-2">Study tools</div><small class="text-secondary">Get explanations, summaries, and practice quizzes.</small></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="h-100 rounded-4 border bg-white p-3"><i class="bi bi-calendar2-week text-warning fs-4"></i><div class="fw-semibold mt-2">Scheme drafts</div><small class="text-secondary">Draft a 10-column scheme grounded in the active KICD syllabus.</small></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="h-100 rounded-4 border bg-white p-3"><i class="bi bi-file-earmark-check text-danger fs-4"></i><div class="fw-semibold mt-2">Exam builder</div><small class="text-secondary">Generate a syllabus-based exam and separate marking scheme as a Word document.</small></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="h-100 rounded-4 border bg-white p-3"><i class="bi bi-chat-dots text-info fs-4"></i><div class="fw-semibold mt-2">General assistant</div><small class="text-secondary">Ask about teaching, learning, or using CoreSynch.</small></div></div>
+    </div>
+
+    <section class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4 p-md-5">
+            <form id="aiForm" action="{% url 'ai_assistant_generate' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="aiMode">What would you like help with?</label>
+                    <select class="form-select" id="aiMode" name="mode">
+                        <option value="chat">General assistant</option>
+                        <option value="document">Ask about a document</option>
+                        <option value="study">Study tools</option>
+                        <option value="scheme">Draft a scheme of work</option>
+                        <option value="exam">Build an exam and marking scheme</option>
+                    </select>
+                </div>
+
+                <div id="studyOptions" class="mb-3 d-none">
+                    <label class="form-label fw-semibold" for="studyAction">Study task</label>
+                    <select class="form-select" id="studyAction" name="study_action">
+                        <option value="explain">Explain a topic</option>
+                        <option value="summarize">Summarize study material</option>
+                        <option value="quiz">Create a practice quiz</option>
+                    </select>
+                </div>
+
+                <div id="schemeOptions" class="row g-3 mb-3 d-none">
+                    <div class="col-md-6"><label class="form-label fw-semibold" for="className">Class or grade</label><input class="form-control" id="className" name="class_name" maxlength="100" placeholder="e.g. Grade 8"></div>
+                    <div class="col-md-6"><label class="form-label fw-semibold" for="subject">Subject</label><input class="form-control" id="subject" name="subject" maxlength="100" placeholder="e.g. Integrated Science"></div>
+                    <div class="col-md-6"><label class="form-label fw-semibold" for="term">Term</label><input class="form-control" id="term" name="term" maxlength="50" placeholder="e.g. Term 1"></div>
+                    <div class="col-md-6"><label class="form-label fw-semibold" for="weeks">Weeks in term</label><input class="form-control" id="weeks" name="weeks" type="number" min="1" max="16" value="12"></div>
+                    <div class="col-12 form-text">Schemes are drafted from an active official KICD syllabus uploaded for the selected class and subject. If no matching syllabus is available, the AI will not generate a generic substitute.</div>
+                </div>
+
+                <div id="examOptions" class="row g-3 mb-3 d-none">
+                    <div class="col-md-6"><label class="form-label fw-semibold" for="examClassName">Class or grade</label><input class="form-control" id="examClassName" name="exam_class_name" maxlength="100" placeholder="e.g. Grade 10"></div>
+                    <div class="col-md-6"><label class="form-label fw-semibold" for="examSubject">Subject</label><input class="form-control" id="examSubject" name="exam_subject" maxlength="100" placeholder="e.g. Applied Agriculture"></div>
+                    <div class="col-12"><label class="form-label fw-semibold" for="examTopics">Topics to assess</label><textarea class="form-control" id="examTopics" name="exam_topics" rows="2" maxlength="1000" placeholder="e.g. Agricultural land, soil fertility, crop production"></textarea></div>
+                    <div class="col-md-4"><label class="form-label fw-semibold" for="examDifficulty">Difficulty</label><select class="form-select" id="examDifficulty" name="exam_difficulty"><option value="mixed">Mixed</option><option value="basic">Basic</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></div>
+                    <div class="col-md-4"><label class="form-label fw-semibold" for="examMarks">Total marks</label><input class="form-control" id="examMarks" name="exam_marks" type="number" min="10" max="200" value="50"></div>
+                    <div class="col-md-4"><label class="form-label fw-semibold" for="examDuration">Duration (minutes)</label><input class="form-control" id="examDuration" name="exam_duration" type="number" min="15" max="240" value="60"></div>
+                    <div class="col-12 form-text">The exam and answer key are based on the active official KICD syllabus for this class and subject. An administrator must upload a matching syllabus first.</div>
+                </div>
+
+                <div id="documentOptions" class="mb-3 d-none">
+                    <label class="form-label fw-semibold" for="document">Reference document</label>
+                    <input class="form-control" id="document" name="document" type="file" accept=".pdf,.docx,.txt">
+                    <div class="form-text">PDF, DOCX, or TXT; up to 10 MB and 50 PDF pages. Scanned PDFs without selectable text may not work.</div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" id="documentConsent" name="document_consent" type="checkbox" value="yes">
+                        <label class="form-check-label small" for="documentConsent">I understand this document will be sent to Google Gemini to answer my request.</label>
+                    </div>
+                </div>
+
+                <section id="chatTranscript" class="mt-4 mb-4 {% if not chat_history %}d-none{% endif %}" aria-label="Chat conversation">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                        <div>
+                            <h2 class="h5 fw-bold mb-0">Conversation</h2>
+                            <small class="text-secondary">Recent chat stays in your session until you start a new conversation.</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill" type="button" id="clearChat">
+                            <i class="bi bi-plus-lg me-1"></i> New conversation
+                        </button>
+                    </div>
+                    <div id="chatMessages" aria-live="polite" aria-relevant="additions">
+                        {% for turn in chat_history %}
+                        <article class="d-flex mb-3 {% if turn.role == 'user' %}justify-content-end{% endif %}">
+                            <div class="ai-chat-bubble {% if turn.role == 'user' %}ai-chat-user{% else %}ai-chat-assistant{% endif %}">
+                                <strong class="small d-block mb-1">{% if turn.role == 'user' %}You{% else %}CoreSynch AI{% endif %}</strong>
+                                <div>{{ turn.text }}</div>
+                            </div>
+                        </article>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="aiMessage" id="messageLabel">Your question or request</label>
+                    <textarea class="form-control" id="aiMessage" name="message" rows="4" maxlength="4000" required placeholder="What can I help you with?"></textarea>
+                    <div class="form-text d-none" id="chatInputHint">Press Enter to send; use Shift+Enter for a new line.</div>
+                    <div class="form-text">AI responses can be inaccurate. Review and verify important educational or curriculum information.</div>
+                </div>
+
+                <button class="btn btn-primary rounded-pill px-4 py-2 fw-semibold" id="aiSubmit" type="submit" {% if not ai_configured %}disabled{% endif %}>
+                    <i class="bi bi-send-fill me-1"></i> <span id="submitLabel">Send message</span>
+                </button>
+            </form>
+
+            <div id="aiStatus" class="mt-3" role="status" aria-live="polite"></div>
+            <section id="aiResultSection" class="mt-4 d-none" aria-label="AI response">
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                    <h2 class="h5 fw-bold mb-0">Response</h2>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" type="button" id="copyResponse"><i class="bi bi-clipboard me-1"></i> Copy</button>
+                </div>
+                <pre id="aiResult" class="border rounded-3 bg-light p-3 mb-0" style="white-space:pre-wrap;font:inherit;"></pre>
+            </section>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    #aiResult{max-height:60vh;overflow:auto}
+    .ai-chat-bubble{max-width:90%;padding:.85rem 1rem;border-radius:1rem;white-space:pre-wrap}
+    .ai-chat-user{background:#3157d5;color:#fff;border-bottom-right-radius:.25rem}
+    .ai-chat-assistant{background:#f1f4f9;color:#14213d;border-bottom-left-radius:.25rem}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const form = document.getElementById('aiForm');
+    const mode = document.getElementById('aiMode');
+    const studyOptions = document.getElementById('studyOptions');
+    const schemeOptions = document.getElementById('schemeOptions');
+    const examOptions = document.getElementById('examOptions');
+    const documentOptions = document.getElementById('documentOptions');
+    const message = document.getElementById('aiMessage');
+    const messageLabel = document.getElementById('messageLabel');
+    const chatInputHint = document.getElementById('chatInputHint');
+    const status = document.getElementById('aiStatus');
+    const resultSection = document.getElementById('aiResultSection');
+    const result = document.getElementById('aiResult');
+    const chatTranscript = document.getElementById('chatTranscript');
+    const chatMessages = document.getElementById('chatMessages');
+    const clearChat = document.getElementById('clearChat');
+    const submit = document.getElementById('aiSubmit');
+    const submitLabel = document.getElementById('submitLabel');
+    const clearChatUrl = "{% url 'ai_assistant_clear' %}";
+
+    function updateChatVisibility() {
+        chatTranscript.classList.toggle('d-none', mode.value !== 'chat' || chatMessages.children.length === 0);
+    }
+
+    function addChatMessage(role, text) {
+        const article = document.createElement('article');
+        article.className = `d-flex mb-3 ${role === 'user' ? 'justify-content-end' : ''}`;
+        const bubble = document.createElement('div');
+        bubble.className = `ai-chat-bubble ${role === 'user' ? 'ai-chat-user' : 'ai-chat-assistant'}`;
+        const label = document.createElement('strong');
+        label.className = 'small d-block mb-1';
+        label.textContent = role === 'user' ? 'You' : 'CoreSynch AI';
+        const content = document.createElement('div');
+        content.textContent = text;
+        bubble.append(label, content);
+        article.append(bubble);
+        chatMessages.append(article);
+    }
+
+    function updateMode() {
+        studyOptions.classList.toggle('d-none', mode.value !== 'study');
+        schemeOptions.classList.toggle('d-none', mode.value !== 'scheme');
+        examOptions.classList.toggle('d-none', mode.value !== 'exam');
+        documentOptions.classList.toggle('d-none', !['document', 'study'].includes(mode.value));
+        messageLabel.textContent = mode.value === 'chat' ? 'Your message' :
+            mode.value === 'document' ? 'Question about the document' :
+            mode.value === 'study' ? 'Topic or study request' :
+            mode.value === 'scheme' ? 'Additional teacher guidance (optional)' :
+            mode.value === 'exam' ? 'Additional exam guidance (optional)' : 'Your question or request';
+        message.required = !['scheme', 'exam'].includes(mode.value);
+        message.placeholder = mode.value === 'chat' ? 'Type your message here…' :
+            mode.value === 'document' ? 'What would you like to know from this document?' :
+            mode.value === 'study' ? 'Enter a topic or describe what you want to study.' :
+            mode.value === 'scheme' ? 'Add learning priorities or other planning notes.' :
+            mode.value === 'exam' ? 'Add instructions such as question types or practical emphasis.' : 'What can I help you with?';
+        submitLabel.textContent = mode.value === 'chat' ? 'Send message' :
+            ['scheme', 'exam'].includes(mode.value) ? 'Generate Word document' : 'Generate response';
+        chatInputHint.classList.toggle('d-none', mode.value !== 'chat');
+        updateChatVisibility();
+    }
+
+    mode.addEventListener('change', updateMode);
+    updateMode();
+
+    message.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+            event.preventDefault();
+            if (!submit.disabled) {
+                form.requestSubmit();
+            }
+        }
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submittedMode = mode.value;
+        const submittedMessage = message.value.trim();
+        status.replaceChildren();
+        resultSection.classList.add('d-none');
+        submit.disabled = true;
+        status.className = 'mt-3 text-secondary';
+        status.textContent = 'Generating response…';
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            });
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'The request could not be completed.');
+            }
+            if (['scheme', 'exam'].includes(submittedMode)) {
+                const documentBlob = await response.blob();
+                const downloadUrl = URL.createObjectURL(documentBlob);
+                const downloadLink = document.createElement('a');
+                const disposition = response.headers.get('Content-Disposition') || '';
+                const filename = disposition.match(/filename="([^"]+)"/);
+                downloadLink.href = downloadUrl;
+                downloadLink.download = filename ? filename[1] :
+                    submittedMode === 'exam' ? 'Exam.docx' : 'Scheme_of_Work.docx';
+                document.body.append(downloadLink);
+                downloadLink.click();
+                downloadLink.remove();
+                setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+                status.className = 'mt-3 text-success small';
+                status.textContent = submittedMode === 'exam' ?
+                    'Your exam and marking scheme were downloaded as a Word document.' :
+                    'Your scheme of work was downloaded as a Word document.';
+            } else {
+                const data = await response.json();
+                if (submittedMode === 'chat') {
+                    addChatMessage('user', submittedMessage);
+                    addChatMessage('model', data.answer);
+                    updateChatVisibility();
+                    message.scrollIntoView({block: 'center', behavior: 'smooth'});
+                    if (message.value.trim() === submittedMessage) {
+                        message.value = '';
+                    }
+                    message.focus({preventScroll: true});
+                } else {
+                    result.textContent = data.answer;
+                    resultSection.classList.remove('d-none');
+                }
+            }
+            if (!['scheme', 'exam'].includes(submittedMode)) {
+                status.textContent = '';
+            }
+        } catch (error) {
+            status.className = 'mt-3 alert alert-danger';
+            status.textContent = error.message || 'The request could not be completed.';
+        } finally {
+            submit.disabled = {% if ai_configured %}false{% else %}true{% endif %};
+        }
+    });
+
+    document.getElementById('copyResponse').addEventListener('click', async () => {
+        await navigator.clipboard.writeText(result.textContent);
+        status.className = 'mt-3 text-success small';
+        status.textContent = 'Response copied.';
+    });
+
+    clearChat.addEventListener('click', async () => {
+        clearChat.disabled = true;
+        status.className = 'mt-3 text-secondary';
+        status.textContent = 'Starting a new conversation…';
+        try {
+            const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+            const response = await fetch(clearChatUrl, {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest'}
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Could not clear the conversation.');
+            }
+            chatMessages.replaceChildren();
+            updateChatVisibility();
+            status.className = 'mt-3 text-success small';
+            status.textContent = 'New conversation started.';
+        } catch (error) {
+            status.className = 'mt-3 alert alert-danger';
+            status.textContent = error.message || 'Could not clear the conversation.';
+        } finally {
+            clearChat.disabled = false;
+        }
+    });
+})();
+</script>
+{% endblock %}

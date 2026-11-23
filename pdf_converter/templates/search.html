@@ -1,0 +1,468 @@
+{% extends 'base.html' %}
+
+{% block title %}Revision Materials &amp; Study Library — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="rev-library-page">
+    <!-- ============================================================
+         HERO SECTION & STATS
+         ============================================================ -->
+    <section class="rev-hero">
+        <div class="container">
+            <div class="text-center mx-auto mb-4" style="max-width: 720px;">
+                <div class="rev-hero-badge">
+                    <i class="bi bi-mortarboard-fill"></i> Kenyan Curriculum Revision Hub
+                </div>
+                <h1 class="display-6 fw-bold text-dark mb-2">
+                    Revision Library &amp; Past Papers
+                </h1>
+                <p class="text-muted lead fs-6 mb-0">
+                    Explore official KNEC examinations, verified marking schemes, subject revision notes, and CBC competency learning materials.
+                </p>
+            </div>
+
+            <!-- Stats Strip -->
+            <div class="rev-stats-strip">
+                <div class="rev-stat-item">
+                    <div class="rev-stat-icon indigo">
+                        <i class="bi bi-collection-fill"></i>
+                    </div>
+                    <div>
+                        <div class="rev-stat-val">{{ total_materials_count|default:"1,250" }}+</div>
+                        <div class="rev-stat-label">Total Documents</div>
+                    </div>
+                </div>
+
+                <div class="rev-stat-item">
+                    <div class="rev-stat-icon emerald">
+                        <i class="bi bi-check2-circle"></i>
+                    </div>
+                    <div>
+                        <div class="rev-stat-val">{{ marking_schemes_count|default:"380" }}+</div>
+                        <div class="rev-stat-label">Marking Schemes</div>
+                    </div>
+                </div>
+
+                <div class="rev-stat-item">
+                    <div class="rev-stat-icon amber">
+                        <i class="bi bi-file-earmark-text-fill"></i>
+                    </div>
+                    <div>
+                        <div class="rev-stat-val">{{ past_papers_count|default:"450" }}+</div>
+                        <div class="rev-stat-label">Past Examinations</div>
+                    </div>
+                </div>
+
+                <div class="rev-stat-item">
+                    <div class="rev-stat-icon sky">
+                        <i class="bi bi-unlock-fill"></i>
+                    </div>
+                    <div>
+                        <div class="rev-stat-val">{{ free_materials_count|default:"600" }}+</div>
+                        <div class="rev-stat-label">Free Resources</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Filter Chips -->
+            <div class="rev-filter-chips">
+                <a href="{% url 'search_materials' %}" class="rev-chip {% if not selected_type and not selected_price and not selected_curriculum %}active{% endif %}">
+                    <i class="bi bi-grid-fill"></i> All Resources
+                </a>
+                <a href="{% url 'search_materials' %}?type=past_paper" class="rev-chip {% if selected_type == 'past_paper' %}active{% endif %}">
+                    <i class="bi bi-file-earmark-pdf"></i> Past Papers
+                </a>
+                <a href="{% url 'search_materials' %}?type=marking_scheme" class="rev-chip {% if selected_type == 'marking_scheme' %}active{% endif %}">
+                    <i class="bi bi-check2-square"></i> Marking Schemes
+                </a>
+                <a href="{% url 'search_materials' %}?type=notes" class="rev-chip {% if selected_type == 'notes' %}active{% endif %}">
+                    <i class="bi bi-journal-text"></i> Subject Notes
+                </a>
+                <a href="{% url 'search_materials' %}?curriculum=cbe" class="rev-chip {% if selected_curriculum == 'cbe' %}active{% endif %}">
+                    <i class="bi bi-mortarboard"></i> CBC (Grade 7-9)
+                </a>
+                <a href="{% url 'search_materials' %}?curriculum=844" class="rev-chip {% if selected_curriculum == '844' %}active{% endif %}">
+                    <i class="bi bi-mortarboard-fill"></i> 8-4-4 (Form 1-4)
+                </a>
+                <a href="{% url 'search_materials' %}?price=free" class="rev-chip {% if selected_price == 'free' %}active{% endif %}">
+                    <i class="bi bi-gift"></i> Free Downloads
+                </a>
+            </div>
+
+            <!-- Search & Multi-Filter Box -->
+            <form method="GET" action="{% url 'search_materials' %}" class="rev-search-container">
+                <!-- Search Bar -->
+                <div class="rev-search-input-wrap">
+                    <i class="bi bi-search"></i>
+                    <input type="search" name="q" value="{{ query|default:'' }}" placeholder="Search by topic, subject name, exam year, or keywords (e.g. Mathematics Form 4 2023)…" aria-label="Search revision materials">
+                    {% if query %}
+                    <a href="{% url 'search_materials' %}" class="btn btn-sm btn-link text-muted p-0 text-decoration-none" title="Clear query">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </a>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary px-4 rounded-pill fw-semibold">
+                        Search
+                    </button>
+                </div>
+
+                <!-- Advanced Filter Grid -->
+                <div class="rev-filter-grid-advanced">
+                    <!-- Curriculum Filter -->
+                    <div class="rev-filter-group">
+                        <label><i class="bi bi-book me-1"></i> Curriculum</label>
+                        <select name="curriculum" class="rev-select" onchange="this.form.submit()">
+                            <option value="">All Curricula</option>
+                            {% for c_code, c_name in curricula %}
+                            <option value="{{ c_code }}" {% if selected_curriculum == c_code %}selected{% endif %}>{{ c_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Class / Form Filter -->
+                    <div class="rev-filter-group">
+                        <label><i class="bi bi-mortarboard me-1"></i> Class / Form</label>
+                        <select name="class" class="rev-select" onchange="this.form.submit()">
+                            <option value="">All Classes</option>
+                            {% for c in classes %}
+                            <option value="{{ c.id }}" {% if selected_class == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Subject Filter -->
+                    <div class="rev-filter-group">
+                        <label><i class="bi bi-journal-bookmark me-1"></i> Subject</label>
+                        <select name="subject" class="rev-select" onchange="this.form.submit()">
+                            <option value="">All Subjects</option>
+                            {% for sub in subjects %}
+                            <option value="{{ sub.id }}" {% if selected_subject == sub.id|stringformat:"s" %}selected{% endif %}>{{ sub.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Material Type Filter -->
+                    <div class="rev-filter-group">
+                        <label><i class="bi bi-tag me-1"></i> Document Type</label>
+                        <select name="type" class="rev-select" onchange="this.form.submit()">
+                            <option value="">All Document Types</option>
+                            {% for type_code, type_name in material_types %}
+                            <option value="{{ type_code }}" {% if selected_type == type_code %}selected{% endif %}>{{ type_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Term Filter -->
+                    <div class="rev-filter-group">
+                        <label><i class="bi bi-calendar3 me-1"></i> Term</label>
+                        <select name="term" class="rev-select" onchange="this.form.submit()">
+                            <option value="">All Terms</option>
+                            {% for term_code, term_name in term_choices %}
+                            <option value="{{ term_code }}" {% if selected_term == term_code %}selected{% endif %}>{{ term_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Secondary Filter Bar (Year, Pricing, Sort, Reset) -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-3 border-top gap-3">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <!-- Year Filter -->
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="small text-muted fw-semibold">Year:</span>
+                            <select name="year" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                                <option value="">All</option>
+                                {% for yr in years %}
+                                <option value="{{ yr }}" {% if selected_year == yr|stringformat:"s" %}selected{% endif %}>{{ yr }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Price Filter -->
+                        <div class="d-flex align-items-center gap-1 ms-2">
+                            <span class="small text-muted fw-semibold">Access:</span>
+                            <select name="price" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                                <option value="">All Prices</option>
+                                <option value="free" {% if selected_price == 'free' %}selected{% endif %}>Free Only</option>
+                                <option value="paid" {% if selected_price == 'paid' %}selected{% endif %}>Premium Only</option>
+                            </select>
+                        </div>
+
+                        <!-- Sort Filter -->
+                        <div class="d-flex align-items-center gap-1 ms-2">
+                            <span class="small text-muted fw-semibold">Sort:</span>
+                            <select name="sort" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                                <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>Newest first</option>
+                                <option value="popular" {% if selected_sort == 'popular' %}selected{% endif %}>Most downloaded</option>
+                                <option value="title" {% if selected_sort == 'title' %}selected{% endif %}>Title A-Z</option>
+                                <option value="oldest" {% if selected_sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Reset & Active Filters -->
+                    <div class="d-flex align-items-center gap-2">
+                        {% if query or selected_type or selected_class or selected_subject or selected_curriculum or selected_term or selected_year or selected_price %}
+                        <a href="{% url 'search_materials' %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1">
+                            <i class="bi bi-x-circle me-1"></i> Reset All Filters
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         RESULTS SECTION
+         ============================================================ -->
+    <div class="container py-5">
+        <!-- Results Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+            <div>
+                <h3 class="fw-bold mb-1 text-dark" style="font-size: 1.45rem;">
+                    {% if query %}
+                    Search Results for <span class="text-primary">"{{ query }}"</span>
+                    {% elif selected_type or selected_curriculum or selected_class or selected_subject %}
+                    Filtered Revision Resources
+                    {% else %}
+                    All Learning Resources
+                    {% endif %}
+                </h3>
+                <p class="text-muted small mb-0">
+                    Showing {{ results|length }} document{% if results|length != 1 %}s{% endif %}{% if total_results_count > results|length %} of {{ total_results_count }} total{% endif %}
+                </p>
+            </div>
+
+            <!-- Quick Browse Shortcut to Full Subject Index -->
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'browse_by_subject' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1">
+                    <i class="bi bi-book me-1"></i> Browse by Subject
+                </a>
+                <a href="{% url 'browse_materials' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1">
+                    <i class="bi bi-folder me-1"></i> Full Catalog
+                </a>
+            </div>
+        </div>
+
+        <!-- Material Cards Grid -->
+        {% if results %}
+        <div class="row g-4">
+            {% for material in results %}
+            <div class="col-xl-4 col-md-6">
+                <div class="rev-card">
+                    <!-- Card Top Header -->
+                    <div class="rev-card-header">
+                        <span class="rev-type-pill {{ material.material_type }}">
+                            {% if material.material_type == 'past_paper' %}
+                            <i class="bi bi-file-earmark-pdf-fill"></i> Past Paper
+                            {% elif material.material_type == 'marking_scheme' %}
+                            <i class="bi bi-check-circle-fill"></i> Marking Scheme
+                            {% elif material.material_type == 'notes' %}
+                            <i class="bi bi-journal-richtext"></i> Notes
+                            {% elif material.material_type == 'textbook' %}
+                            <i class="bi bi-book-half"></i> Textbook
+                            {% else %}
+                            <i class="bi bi-file-earmark-text"></i> {{ material.get_material_type_display }}
+                            {% endif %}
+                        </span>
+
+                        <div>
+                            {% if material.is_free %}
+                            <span class="rev-price-pill free"><i class="bi bi-unlock"></i> Free</span>
+                            {% else %}
+                            <span class="rev-price-pill paid"><i class="bi bi-lock"></i> KSH {{ material.price }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Material Title -->
+                    <h5 class="rev-card-title">
+                        <a href="{% url 'material_detail' material.id %}">
+                            {{ material.title }}
+                        </a>
+                    </h5>
+
+                    <!-- Description -->
+                    <p class="rev-card-desc">
+                        {% if material.description %}
+                        {{ material.description }}
+                        {% else %}
+                        Official Kenya National Curriculum revision document aligned with termly guidelines and KNEC examination standards.
+                        {% endif %}
+                    </p>
+
+                    <!-- Meta Tags / Chips -->
+                    <div class="rev-meta-chips">
+                        <span class="rev-meta-badge" title="Subject">
+                            <i class="bi bi-book text-primary"></i> {{ material.subject.name }}
+                        </span>
+                        {% if material.subject.class_ref %}
+                        <span class="rev-meta-badge" title="Class Level">
+                            <i class="bi bi-mortarboard text-secondary"></i> {{ material.subject.class_ref.name }}
+                        </span>
+                        <span class="rev-meta-badge" title="Curriculum">
+                            {% if material.subject.class_ref.curriculum == 'cbe' %}
+                            <span class="badge bg-purple-subtle text-purple border-0 p-0 fw-bold">CBC</span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border-0 p-0 fw-bold">8-4-4</span>
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                        {% if material.term and material.term != 'all' %}
+                        <span class="rev-meta-badge" title="Term">
+                            <i class="bi bi-calendar3"></i> {{ material.get_term_display }}
+                        </span>
+                        {% endif %}
+                        {% if material.year %}
+                        <span class="rev-meta-badge" title="Year">
+                            <i class="bi bi-clock"></i> {{ material.year }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Card Actions Footer -->
+                    <div class="rev-card-footer">
+                        <span class="rev-download-metric" title="Total downloads">
+                            <i class="bi bi-download text-muted"></i> {{ material.download_count }}
+                        </span>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{% url 'preview_material' material.id %}" class="rev-btn-action rev-btn-preview" title="Quick Preview">
+                                <i class="bi bi-eye"></i> Preview
+                            </a>
+                            <a href="{% url 'download_material' material.id %}" class="rev-btn-action rev-btn-download" title="Download Resource">
+                                <i class="bi bi-cloud-arrow-down-fill"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% elif query %}
+        <!-- No Results Empty State -->
+        <div class="text-center py-5 bg-white rounded-4 border shadow-sm p-5 max-w-600 mx-auto">
+            <div class="stat-icon-wrapper stat-indigo mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.75rem;">
+                <i class="bi bi-search"></i>
+            </div>
+            <h4 class="fw-bold text-dark mb-2">No Matching Materials Found</h4>
+            <p class="text-muted small mb-4">
+                We couldn't find any resources matching "<strong>{{ query }}</strong>" with the selected filters.
+            </p>
+            
+            <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                <span class="small text-muted align-self-center">Try searching for:</span>
+                <a href="{% url 'search_materials' %}?q=Mathematics" class="badge bg-light text-dark border text-decoration-none py-2 px-3">Mathematics</a>
+                <a href="{% url 'search_materials' %}?q=English" class="badge bg-light text-dark border text-decoration-none py-2 px-3">English</a>
+                <a href="{% url 'search_materials' %}?q=Form+4" class="badge bg-light text-dark border text-decoration-none py-2 px-3">Form 4</a>
+                <a href="{% url 'search_materials' %}?q=Grade+7" class="badge bg-light text-dark border text-decoration-none py-2 px-3">Grade 7</a>
+            </div>
+
+            <a href="{% url 'search_materials' %}" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-arrow-counterclockwise me-1"></i> Clear Search Filters
+            </a>
+        </div>
+
+        {% else %}
+        <!-- Empty Repository State -->
+        <div class="text-center py-5 bg-white rounded-4 border shadow-sm p-5 max-w-600 mx-auto">
+            <i class="bi bi-journal-bookmark-fill display-4 text-primary opacity-75 mb-3 d-block"></i>
+            <h4 class="fw-bold text-dark mb-2">Welcome to CoreSynch Revision Library</h4>
+            <p class="text-muted small mb-4">
+                Choose a curriculum, class, or subject above to access KNEC past papers, termly marking schemes, and revision guides.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'browse_by_subject' %}" class="btn btn-primary rounded-pill px-4">
+                    <i class="bi bi-book me-1"></i> Explore by Subject
+                </a>
+                <a href="{% url 'sow_generator' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="bi bi-calendar2-range me-1"></i> Scheme of Work
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ============================================================
+         CURRICULUM QUICK EXPLORER
+         ============================================================ -->
+    <section class="py-5 bg-white border-top border-bottom">
+        <div class="container">
+            <div class="text-center max-w-700 mx-auto mb-4">
+                <span class="converter-badge-new">Curriculum Pathways</span>
+                <h3 class="fw-bold mb-2">Explore by Educational Level</h3>
+                <p class="text-muted small mb-0">Quickly jump into materials tailored to your specific curriculum track</p>
+            </div>
+
+            <div class="row g-4">
+                <!-- CBC Junior Secondary -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-4 transition-hover bg-light">
+                        <div class="rev-curriculum-icon bg-purple-subtle text-purple mb-3" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">CBC Junior Secondary</h5>
+                        <p class="text-muted small mb-3">Grades 7, 8, and 9 competency-based assessment test papers, integrated science, pre-technical notes, and project work.</p>
+                        <a href="{% url 'search_materials' %}?curriculum=cbe" class="fw-semibold text-primary text-decoration-none mt-auto">
+                            Browse CBC Resources &rarr;
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 8-4-4 Secondary -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-4 transition-hover bg-light">
+                        <div class="rev-curriculum-icon bg-primary-subtle text-primary mb-3" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                            <i class="bi bi-mortarboard-fill"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">8-4-4 High School</h5>
+                        <p class="text-muted small mb-3">Form 1 through Form 4 national examination preparations, KCSE past papers with marking schemes, and topical revision tests.</p>
+                        <a href="{% url 'search_materials' %}?curriculum=844" class="fw-semibold text-primary text-decoration-none mt-auto">
+                            Browse KCSE Resources &rarr;
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Teaching Schemes & Tools -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-4 transition-hover bg-light">
+                        <div class="rev-curriculum-icon bg-warning-subtle text-warning mb-3" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                            <i class="bi bi-calendar2-range-fill"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">Lesson Schemes &amp; Planning</h5>
+                        <p class="text-muted small mb-3">Automated Scheme of Work generator for teachers, curriculum syllabi, and administrative classroom record formats.</p>
+                        <a href="{% url 'sow_generator' %}" class="fw-semibold text-primary text-decoration-none mt-auto">
+                            Generate Scheme of Work &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         COMPLEMENTARY ECOSYSTEM CTA
+         ============================================================ -->
+    <section class="py-5">
+        <div class="container text-center py-4">
+            <div class="p-5 bg-white rounded-4 border shadow-sm max-w-700 mx-auto">
+                <span class="badge bg-success-subtle text-success fw-bold text-uppercase px-3 py-2 rounded-pill mb-3">Complete Education Ecosystem</span>
+                <h3 class="fw-bold mb-3">All Your Academic Tools in One Place</h3>
+                <p class="text-muted mb-4">Convert, plan, revise, and discover teaching opportunities across Kenya with CoreSynch.</p>
+                <div class="d-flex justify-content-center flex-wrap gap-3">
+                    <a href="{% url 'sow_generator' %}" class="btn btn-outline-primary rounded-pill px-4 py-2">
+                        <i class="bi bi-calendar2-check me-1"></i> Scheme of Work
+                    </a>
+                    <a href="{% url 'bom_jobs' %}" class="btn btn-outline-success rounded-pill px-4 py-2">
+                        <i class="bi bi-briefcase me-1"></i> Teaching Vacancies
+                    </a>
+                    <a href="{% url 'converter_index' %}" class="btn btn-outline-dark rounded-pill px-4 py-2">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> Document Converter Studio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

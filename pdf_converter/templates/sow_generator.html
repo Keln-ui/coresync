@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Schemes of Work — Download Word Documents — CoreSynch{% endblock %}
+
+{% block extra_head %}
+<style>
+    .sow-page{--sow-ink:#14213d;--sow-muted:#66758b;--sow-line:#e4eaf2;--sow-blue:#3157d5;color:var(--sow-ink)}
+    .sow-page .sow-shell{max-width:1180px}
+    .sow-page .sow-hero{position:relative;overflow:hidden;padding:clamp(1.5rem,4vw,3rem);border-radius:28px;color:#fff;background:radial-gradient(circle at 88% 12%,rgba(66,206,190,.25),transparent 30%),linear-gradient(125deg,#14213d,#233d72 60%,#3157d5);box-shadow:0 24px 60px rgba(26,48,92,.18)}
+    .sow-page .sow-hero h1{font-weight:850;letter-spacing:-.045em;font-size:clamp(2rem,4vw,3.3rem)}
+    .sow-page .sow-hero p{color:rgba(255,255,255,.76);max-width:560px}
+    .sow-page .sow-eyebrow{text-transform:uppercase;letter-spacing:.13em;font-weight:800;font-size:.7rem;color:#b9f4e9}
+    .sow-page .sow-hero-icon{width:68px;height:68px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.22);border-radius:21px;background:rgba(255,255,255,.11);font-size:1.8rem}
+    .sow-page .sow-stat{min-width:150px;padding:1rem 1.2rem;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);border-radius:18px}
+    .sow-page .sow-stat strong{display:block;font-size:1.35rem}.sow-page .sow-stat span{display:block;color:rgba(255,255,255,.68);font-size:.76rem;margin-top:.25rem}
+    .sow-page .sow-panel{background:#fff;border:1px solid var(--sow-line);border-radius:24px;box-shadow:0 16px 42px rgba(23,42,76,.06)}
+    .sow-page .sow-tabs{display:flex;gap:.5rem;padding:.4rem;background:#f1f4f9;border-radius:16px}
+    .sow-page .sow-tabs .nav-link{border-radius:12px!important;color:#66758b;padding:.75rem 1.15rem;font-weight:750}
+    .sow-page .sow-tabs .nav-link.active{background:#fff!important;color:var(--sow-blue)!important;box-shadow:0 3px 12px rgba(22,39,71,.1)}
+    .sow-page .sow-filter{padding:1rem;background:#f7f9fc;border:1px solid var(--sow-line);border-radius:18px}
+    .sow-page .sow-filter .form-control,.sow-page .sow-filter .saas-select{min-height:48px;border-radius:12px!important;border:1px solid #dfe6ef;background-color:#fff}
+    .sow-page .sow-scheme-card{height:100%;border:1px solid var(--sow-line);border-radius:20px;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+    .sow-page .sow-scheme-card:hover{transform:translateY(-4px);border-color:#b8c8f4;box-shadow:0 18px 34px rgba(26,48,92,.1)!important}
+    .sow-page .sow-subject-icon{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;border-radius:15px;background:#edf2ff;color:var(--sow-blue);font-size:1.2rem}
+    .sow-page .sow-chip{display:inline-flex;align-items:center;gap:.35rem;padding:.38rem .65rem;border-radius:9px;background:#f3f6fa;color:#526177;font-size:.72rem;font-weight:750}
+    .sow-page .sow-download{background:var(--sow-blue);border-color:var(--sow-blue);box-shadow:0 7px 15px rgba(49,87,213,.2)}
+    .sow-page .sow-upload-zone{border:1px dashed #b9c6d8;border-radius:18px;background:#f8faff}
+    @media(max-width:767.98px){.sow-page .sow-stat{min-width:calc(50% - .5rem);flex:1}.sow-page .sow-hero-icon{display:none}.sow-page .sow-tabs .nav-link{padding:.65rem .8rem}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 sow-page">
+    <div class="row justify-content-center">
+        <div class="col-12 sow-shell">
+
+            <!-- Breadcrumbs -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0 small">
+                    <li class="breadcrumb-item"><a href="{% url 'academic_index' %}" class="text-decoration-none text-muted"><i class="bi bi-mortarboard-fill text-primary me-1"></i> Academic Hub</a></li>
+                    <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Schemes of Work</li>
+                </ol>
+            </nav>
+
+            <section class="sow-hero mb-4">
+                <div class="d-flex align-items-start justify-content-between gap-4 position-relative" style="z-index:1;">
+                    <div>
+                        <div class="sow-eyebrow mb-3"><i class="bi bi-stars"></i> Teaching resources</div>
+                        <h1 class="mb-2">Schemes of Work</h1>
+                        <p class="mb-4">Find curriculum-ready plans, personalize the cover details, and download an editable Word document.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <div class="sow-stat"><strong>{{ total_schemes_count }}</strong><span>Published schemes</span></div>
+                            <div class="sow-stat"><strong>DOCX</strong><span>Editable format</span></div>
+                        </div>
+                    </div>
+                    <div class="sow-hero-icon"><i class="bi bi-journal-bookmark-fill"></i></div>
+                </div>
+            </section>
+
+            <div class="sow-panel p-3 p-md-4 p-lg-5">
+
+                <!-- Header -->
+                <!-- Flash messages -->
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-warning border-0 rounded-3 p-3 mb-3 d-flex align-items-center gap-2 small">
+                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5 flex-shrink-0"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <!-- Tabs -->
+                <ul class="nav nav-pills justify-content-center mb-4 sow-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab != 'upload' %}active{% endif %} rounded-pill px-4 py-2 small fw-semibold"
+                                id="download-tab" data-bs-toggle="tab" data-bs-target="#download-pane" type="button">
+                            <i class="bi bi-download me-1"></i> Download Schemes
+                            <span class="badge bg-white text-primary ms-1 small fw-bold">{{ total_schemes_count }}</span>
+                        </button>
+                    </li>
+                    {% if user.is_authenticated and user.is_staff %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'upload' %}active{% endif %} rounded-pill px-4 py-2 small fw-semibold text-success"
+                                id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button">
+                            <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload Scheme (.docx)
+                        </button>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <div class="tab-content">
+
+                    <!-- DOWNLOAD TAB -->
+                    <div class="tab-pane fade {% if active_tab != 'upload' %}show active{% endif %}" id="download-pane">
+
+                        <!-- Search & Filter -->
+                        <form method="GET" action="{% url 'sow_generator' %}" class="row g-2 align-items-center mb-4 sow-filter">
+                            <input type="hidden" name="tab" value="schemes">
+                            <div class="col-md-5">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0 rounded-start-pill text-muted"><i class="bi bi-search"></i></span>
+                                    <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 rounded-end-pill py-2" placeholder="Search subject or class...">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="class" class="saas-select">
+                                    <option value="">All Classes</option>
+                                    {% for class_obj in classes %}
+                                    <option value="{{ class_obj.id }}" {% if selected_class == class_obj.id|stringformat:"s" %}selected{% endif %}>{{ class_obj.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select name="term" class="saas-select">
+                                    <option value="">All Terms</option>
+                                    <option value="term1" {% if selected_term == 'term1' %}selected{% endif %}>Term 1</option>
+                                    <option value="term2" {% if selected_term == 'term2' %}selected{% endif %}>Term 2</option>
+                                    <option value="term3" {% if selected_term == 'term3' %}selected{% endif %}>Term 3</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex gap-1">
+                                <button type="submit" class="btn btn-primary rounded-pill w-100 py-2 fw-semibold">
+                                    <i class="bi bi-funnel"></i> Filter
+                                </button>
+                                {% if search_query or selected_class or selected_term %}
+                                <a href="{% url 'sow_generator' %}" class="btn btn-outline-secondary rounded-pill py-2" title="Clear">
+                                    <i class="bi bi-x"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </form>
+
+                        <!-- Scheme Cards -->
+                        {% if schemes %}
+                        <div class="row g-3">
+                            {% for scheme in schemes %}
+                            <div class="col-md-6 col-xl-4">
+                                <div class="card sow-scheme-card shadow-none p-3 p-lg-4 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-3 mb-3">
+                                            <div class="sow-subject-icon"><i class="bi bi-journal-text"></i></div>
+                                            <div class="min-w-0">
+                                                <div class="text-muted text-uppercase fw-bold" style="letter-spacing:.1em;font-size:.65rem;">{{ scheme.subject.name }}</div>
+                                                <div class="fw-bold text-dark text-truncate">{{ scheme.title }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-2 mb-3">
+                                            <span class="sow-chip"><i class="bi bi-mortarboard"></i>{{ scheme.class_ref.name }}</span>
+                                            <span class="sow-chip"><i class="bi bi-calendar3"></i>{{ scheme.get_term_display }}</span>
+                                            <span class="sow-chip"><i class="bi bi-clock-history"></i>{{ scheme.academic_year }}</span>
+                                        </div>
+                                        {% if scheme.description %}
+                                        <p class="text-secondary small mb-3">{{ scheme.description|truncatechars:120 }}</p>
+                                        {% else %}
+                                        <p class="text-muted small mb-3">A ready-to-use scheme in editable Word format.</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="border-top pt-3 d-flex align-items-center justify-content-between flex-wrap gap-2 mt-auto">
+                                        <span class="text-muted small">
+                                            <i class="bi bi-download me-1 text-primary"></i>{{ scheme.download_count }} download{{ scheme.download_count|pluralize }}
+                                        </span>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <a href="{% url 'scheme_coverage' scheme.id %}"
+                                               class="btn btn-outline-primary rounded-pill px-3 py-2 small fw-bold d-inline-flex align-items-center gap-1">
+                                                <i class="bi bi-check2-square"></i> Track coverage
+                                            </a>
+                                            <a href="{% url 'scheme_download_details' scheme.id %}"
+                                               class="btn btn-primary sow-download rounded-pill px-3 py-2 small fw-bold d-inline-flex align-items-center gap-1">
+                                                <i class="bi bi-download"></i> Get scheme
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        {% else %}
+                        <div class="text-center py-5 px-3 bg-light rounded-4 border">
+                            <div class="sow-subject-icon mx-auto mb-3" style="width:60px;height:60px;font-size:1.5rem;">
+                                <i class="bi bi-search"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-1">
+                                {% if search_query or selected_class or selected_term %}
+                                No schemes match your filters
+                                {% else %}
+                                No Schemes Uploaded Yet
+                                {% endif %}
+                            </h5>
+                            <p class="text-muted small mb-3">
+                                {% if search_query or selected_class or selected_term %}
+                                Try clearing the filters to see all available schemes.
+                                {% else %}
+                                Your administrator has not uploaded any schemes of work yet. Please check back later.
+                                {% endif %}
+                            </p>
+                            {% if search_query or selected_class or selected_term %}
+                            <a href="{% url 'sow_generator' %}" class="btn btn-outline-primary rounded-pill px-4 py-2 small">
+                                <i class="bi bi-x-circle me-1"></i> Clear Filters
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                    </div>
+
+                    <!-- ADMIN UPLOAD TAB (staff only) -->
+                    {% if user.is_authenticated and user.is_staff %}
+                    <div class="tab-pane fade {% if active_tab == 'upload' %}show active{% endif %}" id="upload-pane">
+                        <div class="alert alert-success border-0 rounded-3 p-3 mb-4" style="background: rgba(16,185,129,0.1);">
+                            <div class="d-flex align-items-center gap-2 text-success fw-bold small mb-1">
+                                <i class="bi bi-file-earmark-word-fill fs-5"></i> Admin Word Document Publishing
+                            </div>
+                            <div class="text-muted small">
+                                Upload only <strong>Microsoft Word (.docx or .doc)</strong> files. Once published, this exact file will be available for users to download.
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{% url 'admin_upload_sow' %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold text-dark small">Word Document (.docx/.doc) <span class="text-danger">*</span></label>
+                                    <div class="p-4 text-center sow-upload-zone">
+                                        <i class="bi bi-file-earmark-word-fill display-5 text-primary mb-2 d-block"></i>
+                                        <input type="file" name="sow_file" class="form-control" accept=".docx,.doc" required>
+                                        <div class="form-text small mt-2 fw-semibold text-primary">Accepted: .docx, .doc only (Max 25MB)</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold text-dark small">Title (Optional)</label>
+                                    <input type="text" name="title" class="form-control py-2 rounded-3" placeholder="e.g. Mathematics Scheme of Work — Form 4 Term 1 2026">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-dark small">Class / Grade <span class="text-danger">*</span></label>
+                                    <select name="class_id" class="saas-select" required>
+                                        <option value="">Select Class</option>
+                                        {% for class_obj in classes %}
+                                        <option value="{{ class_obj.id }}">{{ class_obj.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-dark small">Subject <span class="text-danger">*</span></label>
+                                    <select name="subject_id" class="saas-select" required>
+                                        <option value="">Select Subject</option>
+                                        {% for subject in subjects %}
+                                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-dark small">Term <span class="text-danger">*</span></label>
+                                    <select name="term" class="saas-select" required>
+                                        <option value="term1">Term 1</option>
+                                        <option value="term2">Term 2</option>
+                                        <option value="term3">Term 3</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-dark small">Academic Year <span class="text-danger">*</span></label>
+                                    <input type="text" name="academic_year" class="form-control py-2 rounded-3" value="{% now 'Y' %}" required>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-dark small">Number of Weeks</label>
+                                    <input type="number" name="weeks_count" class="form-control py-2 rounded-3" value="12" min="1" max="52">
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold text-dark small">Description / Notes</label>
+                                    <textarea name="description" class="form-control rounded-3" rows="2" placeholder="Optional notes about this scheme..."></textarea>
+                                </div>
+
+                                <div class="col-12 mt-3">
+                                    <button type="submit" class="btn btn-success w-100 py-3 rounded-pill fw-bold shadow-sm">
+                                        <i class="bi bi-cloud-arrow-up-fill me-2"></i> Upload &amp; Publish Scheme
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                </div><!-- /tab-content -->
+
+                <!-- Footer -->
+                <div class="border-top pt-4 mt-4">
+                    <a href="{% url 'academic_index' %}" class="btn btn-outline-secondary rounded-pill px-3 py-2 small">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Academic Hub
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

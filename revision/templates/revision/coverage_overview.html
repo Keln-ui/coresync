@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Scheme Coverage Overview — CoreSynch{% endblock %}
+
+{% block content %}
+<main class="container py-4 py-lg-5" style="max-width:1240px;">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+        <div>
+            <span class="badge rounded-pill text-bg-primary mb-2"><i class="bi bi-bar-chart-line me-1"></i> Academic operations</span>
+            <h1 class="h2 fw-bold mb-1">Scheme coverage overview</h1>
+            <p class="text-secondary mb-0">Aggregate teaching progress reported across active schemes.</p>
+        </div>
+        <a class="btn btn-outline-secondary rounded-pill" href="{% url 'admin_dashboard_custom' %}"><i class="bi bi-arrow-left me-1"></i> Admin dashboard</a>
+    </div>
+
+    <section class="row g-3 mb-4" aria-label="Coverage metrics">
+        <div class="col-sm-4"><div class="card border-0 shadow-sm rounded-4 p-3"><div class="small text-secondary">Teacher updates</div><div class="fs-3 fw-bold">{{ total_updates }}</div></div></div>
+        <div class="col-sm-4"><div class="card border-0 shadow-sm rounded-4 p-3"><div class="small text-secondary">Taught updates</div><div class="fs-3 fw-bold text-success">{{ taught_updates }}</div></div></div>
+        <div class="col-sm-4"><div class="card border-0 shadow-sm rounded-4 p-3"><div class="small text-secondary">Follow-up needed</div><div class="fs-3 fw-bold text-warning">{{ follow_up_updates }}</div></div></div>
+    </section>
+
+    <section class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4">
+        <h2 class="h5 fw-bold mb-3">Progress by scheme</h2>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead><tr><th>Class / subject</th><th>Term</th><th>Taught weeks</th><th>Follow-up weeks</th><th>Teachers reporting</th></tr></thead>
+                <tbody>
+                    {% for scheme in schemes %}
+                    <tr>
+                        <td><strong>{{ scheme.class_ref.name }} · {{ scheme.subject.name }}</strong><div class="small text-secondary">{{ scheme.title }}</div></td>
+                        <td>{{ scheme.get_term_display }} {{ scheme.academic_year }}</td>
+                        <td><span class="badge text-bg-success">{{ scheme.taught_weeks }} / {{ scheme.weeks_count }}</span></td>
+                        <td><span class="badge text-bg-warning">{{ scheme.follow_up_weeks }}</span></td>
+                        <td>{{ scheme.teachers_reporting }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-secondary py-4">No active schemes are available.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card border-0 shadow-sm rounded-4 p-3 p-md-4">
+        <h2 class="h5 fw-bold mb-3">Recent teacher updates</h2>
+        {% for update in recent_updates %}
+        <div class="d-flex justify-content-between align-items-start gap-3 py-3 border-bottom">
+            <div>
+                <strong>{{ update.scheme.class_ref.name }} · {{ update.scheme.subject.name }} · Week {{ update.week_number }}</strong>
+                <div class="small text-secondary">{{ update.teacher.get_short_name|default:update.teacher.username }} · {{ update.scheme.get_term_display }} {{ update.scheme.academic_year }}</div>
+                {% if update.notes %}<div class="small mt-1">{{ update.notes }}</div>{% endif %}
+            </div>
+            <span class="badge {% if update.status == 'taught' %}text-bg-success{% elif update.status == 'follow_up' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">{{ update.get_status_display }}</span>
+        </div>
+        {% empty %}
+        <div class="text-center text-secondary py-4">Teachers have not submitted coverage updates yet.</div>
+        {% endfor %}
+    </section>
+</main>
+{% endblock %}

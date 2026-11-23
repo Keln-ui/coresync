@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Track Scheme Coverage — CoreSynch{% endblock %}
+
+{% block extra_head %}
+<style>
+    .coverage-page{--coverage-ink:#17243d;--coverage-muted:#738098;--coverage-line:#e6ebf2;color:var(--coverage-ink)}
+    .coverage-page .coverage-card{border:1px solid var(--coverage-line);border-radius:18px;background:#fff;box-shadow:0 10px 28px rgba(28,45,75,.045)}
+    .coverage-page .coverage-week{padding:1.1rem 0;border-bottom:1px solid #eef1f6}
+    .coverage-page .coverage-week:last-child{border-bottom:0}
+    .coverage-page .coverage-number{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:#edf2ff;color:#3157d5;font-weight:800}
+    .coverage-page .form-select,.coverage-page .form-control{border-radius:11px}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="container py-4 py-lg-5 coverage-page" style="max-width:1120px;">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'sow_generator' %}">Schemes of Work</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Track coverage</li>
+        </ol>
+    </nav>
+
+    <header class="mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <span class="badge rounded-pill text-bg-primary mb-2"><i class="bi bi-check2-square me-1"></i> Teaching progress</span>
+                <h1 class="h2 fw-bold mb-1">Scheme coverage</h1>
+                <p class="text-secondary mb-0">{{ scheme.title }} · {{ scheme.class_ref.name }} · {{ scheme.subject.name }} · {{ scheme.get_term_display }} {{ scheme.academic_year }}</p>
+            </div>
+            {% if user.is_staff %}
+            <a class="btn btn-outline-primary rounded-pill" href="{% url 'scheme_coverage_overview' %}"><i class="bi bi-bar-chart-line me-1"></i> Staff overview</a>
+            {% endif %}
+        </div>
+    </header>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags|default:'info' }}{% endif %} border-0 rounded-3">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+
+    <section class="row g-3 mb-4" aria-label="Coverage summary">
+        <div class="col-sm-4"><div class="coverage-card p-3"><div class="small text-secondary">Teaching weeks</div><div class="fs-3 fw-bold">{{ week_rows|length }}</div></div></div>
+        <div class="col-sm-4"><div class="coverage-card p-3"><div class="small text-secondary">Marked taught</div><div class="fs-3 fw-bold text-success">{{ taught_count }}</div></div></div>
+        <div class="col-sm-4"><div class="coverage-card p-3"><div class="small text-secondary">Needs follow-up</div><div class="fs-3 fw-bold text-warning">{{ follow_up_count }}</div></div></div>
+    </section>
+
+    <section class="coverage-card p-3 p-md-4">
+        <div class="mb-3">
+            <h2 class="h5 fw-bold mb-1">Weekly progress</h2>
+            <p class="small text-secondary mb-0">Your updates are visible to you and academic administrators. Save each week as you teach.</p>
+        </div>
+        {% for row in week_rows %}
+        <form method="post" class="coverage-week">
+            {% csrf_token %}
+            <input type="hidden" name="week_number" value="{{ row.number }}">
+            <div class="row g-3 align-items-center">
+                <div class="col-auto"><div class="coverage-number">{{ row.number }}</div></div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label small fw-semibold mb-1" for="status-{{ row.number }}">Status</label>
+                    <select class="form-select" id="status-{{ row.number }}" name="status">
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if row.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md">
+                    <label class="form-label small fw-semibold mb-1" for="notes-{{ row.number }}">Teacher notes</label>
+                    <input class="form-control" id="notes-{{ row.number }}" name="notes" maxlength="1000" value="{{ row.notes }}" placeholder="Optional: class progress, gaps, or next steps">
+                    {% if row.updated_at %}<small class="text-secondary">Updated {{ row.updated_at|date:"M j, Y, g:i a" }}</small>{% endif %}
+                </div>
+                <div class="col-12 col-md-auto"><button class="btn btn-primary rounded-pill px-3" type="submit"><i class="bi bi-save me-1"></i> Save</button></div>
+            </div>
+        </form>
+        {% empty %}
+        <div class="text-center text-secondary py-5">This scheme does not have any teaching weeks configured.</div>
+        {% endfor %}
+    </section>
+</main>
+{% endblock %}

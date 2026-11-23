@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Conversion History — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace small mb-1">ACTIVITY LOG</span>
+            <h1 class="fw-bold text-dark mb-1">Conversion History</h1>
+            <p class="text-muted small mb-0">Browse and download your previously processed documents.</p>
+        </div>
+        <div>
+            <a href="{% url 'index' %}" class="btn btn-primary rounded-pill px-4 py-2">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> New Conversion
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+        {% if conversions %}
+        <div class="saas-table-wrapper border">
+            <table class="saas-table">
+                <thead>
+                    <tr>
+                        <th>Original Document</th>
+                        <th>Target Format</th>
+                        <th>Status</th>
+                        <th>Date Processed</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for conversion in conversions %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-file-earmark-pdf text-danger fs-5"></i>
+                                <span class="fw-semibold text-dark small" style="word-break: break-all;">
+                                    {{ conversion.original_pdf_filename }}
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-secondary border small">
+                                {{ conversion.get_output_format_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if conversion.status == 'completed' %}
+                                <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 small">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Completed
+                                </span>
+                            {% elif conversion.status == 'failed' %}
+                                <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 small">
+                                    <i class="bi bi-x-circle-fill me-1"></i> Failed
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning rounded-pill px-3 py-1 small">
+                                    <i class="bi bi-hourglass-split me-1"></i> Processing
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ conversion.created_at|date:"M d, Y H:i" }}</small>
+                        </td>
+                        <td class="text-end">
+                            {% if conversion.status == 'completed' and conversion.converted_file %}
+                                <a href="{% url 'download_file' conversion.converted_file_filename %}" 
+                                   class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                    <i class="bi bi-download me-1"></i> Download
+                                </a>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-clock-history display-4 text-muted opacity-50 d-block mb-3"></i>
+            <h5 class="fw-bold text-dark">No Previous Conversions</h5>
+            <p class="text-muted small mb-4">When you convert files using CoreSynch, your conversion history and downloads will appear here.</p>
+            <a href="{% url 'index' %}" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-arrow-repeat me-1"></i> Start Converting Now
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

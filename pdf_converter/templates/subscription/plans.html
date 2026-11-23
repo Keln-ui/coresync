@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Subscription Plans — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center max-w-700 mx-auto mb-5">
+        <span class="converter-badge-new"><i class="bi bi-stars me-1"></i> Membership Plans</span>
+        <h1 class="display-6 fw-bold text-dark mb-2">Simple, Transparent Pricing</h1>
+        <p class="text-muted lead">Unlock unlimited document conversions, full curriculum downloads, and school-wide access.</p>
+    </div>
+
+    {% if active_subscription %}
+    <div class="alert alert-success border-0 shadow-sm rounded-4 p-4 mb-5 max-w-800 mx-auto d-flex align-items-center gap-3">
+        <div class="stat-icon-wrapper stat-emerald" style="width: 48px; height: 48px; font-size: 1.5rem; flex-shrink: 0;">
+            <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div class="flex-grow-1">
+            <h5 class="fw-bold mb-1 text-success">Active Subscription: {{ active_subscription.plan.name }}</h5>
+            <p class="mb-0 small text-muted">
+                Your subscription is active from <strong>{{ active_subscription.start_date|date:"M d, Y" }}</strong> until <strong>{{ active_subscription.end_date|date:"M d, Y" }}</strong>.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="pricing-grid-modern">
+        {% for plan in plans %}
+        <div class="pricing-card-modern {% if forloop.counter == 2 %}pricing-card-featured{% endif %}">
+            {% if forloop.counter == 2 %}
+            <span class="pricing-popular-pill">Most Popular</span>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-light text-secondary border small">{{ plan.get_plan_target_display|default:"All Users" }}</span>
+                <span class="badge bg-primary-subtle text-primary rounded-pill small">{{ plan.get_duration_display }}</span>
+            </div>
+
+            <h3 class="pricing-plan-name">{{ plan.name }}</h3>
+            <p class="text-muted small mb-0">{{ plan.description|default:"Comprehensive access for educational institutions and power users." }}</p>
+
+            <div class="pricing-plan-price">
+                <span class="pricing-currency">KSH</span>
+                <span class="pricing-amount">{{ plan.amount|floatformat:0 }}</span>
+                <span class="pricing-period">/ {{ plan.duration }}</span>
+            </div>
+
+            <ul class="pricing-features-list">
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    {% if plan.max_teachers > 0 %}
+                        Up to {{ plan.max_teachers }} Teacher Accounts
+                    {% else %}
+                        Unlimited Teachers &amp; Staff
+                    {% endif %}
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    {% if plan.max_classes > 0 %}
+                        Up to {{ plan.max_classes }} Classes
+                    {% else %}
+                        Unlimited Class Coverage
+                    {% endif %}
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    {% if plan.includes_revision_access %}Full Revision Library &amp; Past Papers{% else %}Standard Resources{% endif %}
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    {% if plan.includes_pdf_conversion %}Unlimited Document Conversions{% else %}Pay-as-you-go Conversions{% endif %}
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    {% if plan.includes_ocr %}Advanced OCR for Scanned Documents{% else %}Standard Text Extraction{% endif %}
+                </li>
+                <li>
+                    <i class="bi bi-check-circle-fill"></i>
+                    Scheme of Work Generator &amp; Word Export
+                </li>
+            </ul>
+
+            <div class="mt-auto pt-3 border-top">
+                {% if active_subscription %}
+                    <button class="btn btn-secondary w-100 py-3 rounded-pill fw-bold" disabled>Already Subscribed</button>
+                {% else %}
+                    <a href="{% url 'subscribe_plan' plan.id %}" class="btn {% if forloop.counter == 2 %}btn-primary{% else %}btn-outline-primary{% endif %} w-100 py-3 rounded-pill fw-bold shadow-sm">
+                        <i class="bi bi-phone me-1"></i> Subscribe via M-Pesa
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5 bg-white rounded-4 border shadow-sm p-5">
+            <i class="bi bi-tags display-4 text-muted opacity-50 d-block mb-3"></i>
+            <h5 class="fw-bold text-dark">No Subscription Plans Configured</h5>
+            <p class="text-muted small">Subscription tiers will be displayed here once published by school administration.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- M-Pesa Integration Notice -->
+    <div class="text-center mt-5 text-muted small">
+        <i class="bi bi-shield-check text-success me-1"></i> Instant automated activation upon Safaricom M-Pesa confirmation.
+    </div>
+</div>
+{% endblock %}

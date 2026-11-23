@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Download Scheme of Work - CoreSynch{% endblock %}
+
+{% block extra_head %}
+<style>
+    .scheme-download-page{--scheme-ink:#17243d;--scheme-muted:#6a7890;--scheme-line:#e4eaf2}
+    .scheme-download-page .scheme-banner{background:linear-gradient(125deg,#14213d,#29477e 65%,#3157d5);color:#fff;border-radius:22px;padding:1.5rem}
+    .scheme-download-page .scheme-mark{width:52px;height:52px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);border-radius:16px;font-size:1.4rem}
+    .scheme-download-page .scheme-card{border:1px solid var(--scheme-line);border-radius:24px;box-shadow:0 20px 55px rgba(20,37,67,.1)}
+    .scheme-download-page .scheme-input{min-height:52px;border-radius:13px;border-color:#dbe3ee}
+    .scheme-download-page .scheme-label{font-size:.77rem;letter-spacing:.03em;color:#485770}
+    .scheme-download-page .scheme-step{display:flex;align-items:center;gap:.65rem;color:var(--scheme-muted);font-size:.78rem}
+    .scheme-download-page .scheme-step span{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:#edf2ff;color:#3157d5;font-weight:800}
+    .scheme-download-page .scheme-submit{background:#3157d5;border-color:#3157d5;box-shadow:0 8px 18px rgba(49,87,213,.2)}
+    .scheme-download-page .event-panel{border:1px solid var(--scheme-line);border-radius:18px;background:#f8faff;padding:1.15rem}
+    .scheme-download-page .event-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:#e9efff;color:#3157d5}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 scheme-download-page">
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-9">
+            <div class="card scheme-card border-0 p-3 p-md-4 p-lg-5">
+                <div class="scheme-banner mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="scheme-mark"><i class="bi bi-journal-check"></i></div>
+                        <div>
+                            <div class="small text-white-50 text-uppercase fw-bold" style="letter-spacing:.12em;">Prepare your download</div>
+                            <h1 class="h3 fw-bold mb-1">Personalize this scheme</h1>
+                            <div class="small text-white-50">{{ scheme.subject.name }} <span class="mx-1">•</span> {{ scheme.title }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if error %}
+                <div class="alert alert-danger rounded-3 small">{{ error }}</div>
+                {% endif %}
+
+                <div class="d-flex flex-wrap gap-3 mb-4">
+                    <div class="scheme-step"><span>1</span> School identity</div>
+                    <div class="scheme-step"><span>2</span> Teaching period</div>
+                    <div class="scheme-step"><span>3</span> Plan term weeks</div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label scheme-label fw-bold">NAME OF SCHOOL <span class="text-danger">*</span></label>
+                        <input type="text" name="school_name" class="form-control scheme-input"
+                               value="{{ school_name }}" placeholder="Enter school name" required>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label scheme-label fw-bold">CLASS / GRADE <span class="text-danger">*</span></label>
+                            <select name="class_id" class="form-select scheme-input" required>
+                                <option value="">Select Class/Grade</option>
+                                {% for class_obj in classes %}
+                                <option value="{{ class_obj.id }}" {% if selected_class_id == class_obj.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ class_obj.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label scheme-label fw-bold">ACADEMIC YEAR <span class="text-danger">*</span></label>
+                            <select name="academic_year" class="form-select scheme-input" required>
+                                <option value="">Select Year</option>
+                                {% for year in academic_years %}
+                                <option value="{{ year }}" {% if selected_academic_year == year %}selected{% endif %}>{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label scheme-label fw-bold">TERM <span class="text-danger">*</span></label>
+                            <select name="term" class="form-select scheme-input" required>
+                                <option value="">Select Term</option>
+                                {% for value, label in term_choices %}
+                                <option value="{{ value }}" {% if selected_term == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <section class="event-panel mt-4">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="event-icon"><i class="bi bi-calendar2-week"></i></span>
+                            <h2 class="h6 fw-bold mb-0">Important term weeks <span class="text-muted fw-normal">(optional)</span></h2>
+                        </div>
+                        <p class="small text-muted mb-3">Choose where key events fall. They’ll be highlighted in your downloaded scheme.</p>
+                        <div class="row g-3">
+                            {% for field in event_fields %}
+                            <div class="col-sm-6">
+                                <label class="form-label scheme-label fw-bold">{{ field.label|upper }}</label>
+                                <select name="{{ field.name }}" class="form-select scheme-input">
+                                    <option value="">Not set</option>
+                                    {% for week in week_options %}
+                                    <option value="{{ week }}" {% if field.value == week|stringformat:'s' %}selected{% endif %}>Week {{ week }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+
+                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a href="{% url 'sow_generator' %}" class="btn btn-light rounded-pill px-4">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary scheme-submit rounded-pill px-4 py-2 fw-bold">
+                            <i class="bi bi-file-earmark-word me-2"></i> Download editable scheme
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

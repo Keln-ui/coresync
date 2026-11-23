@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Failed — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 bg-white text-center">
+                <div class="stat-icon-wrapper stat-danger mx-auto mb-3" style="width: 72px; height: 72px; font-size: 2.25rem; background: #fee2e2; color: #ef4444;">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+                <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 font-monospace small mb-2">TRANSACTION INCOMPLETE</span>
+                <h2 class="fw-bold text-dark mb-2">Payment Did Not Complete</h2>
+                <p class="text-muted mb-4">{{ error|default:"The transaction was cancelled or timed out before PIN authorization." }}</p>
+
+                <div class="p-3 bg-light rounded-3 border mb-4 text-start small">
+                    <strong class="text-dark d-block mb-1"><i class="bi bi-lightbulb-fill text-warning me-1"></i> Common Reasons:</strong>
+                    <ul class="mb-0 ps-3 text-muted">
+                        <li>STK push prompt was dismissed or took too long to respond.</li>
+                        <li>Incorrect M-Pesa PIN was entered.</li>
+                        <li>Insufficient balance in your M-Pesa account.</li>
+                    </ul>
+                </div>
+
+                <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                    <a href="{% url 'payment_page' conversion.id %}" class="btn btn-warning rounded-pill px-4 py-2 fw-semibold">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Retry M-Pesa Payment
+                    </a>
+                    <a href="{% url 'index' %}" class="btn btn-outline-secondary rounded-pill px-4 py-2">
+                        Back to Converter
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

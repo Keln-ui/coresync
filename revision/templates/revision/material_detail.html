@@ -1,0 +1,162 @@
+{% extends 'revision/base_revision.html' %}
+
+{% block subtitle %}{{ material.title }}{% endblock %}
+
+{% block heading %}{{ material.title }}{% endblock %}
+
+{% block breadcrumb %}
+    {% if material.subject and material.subject.class_ref %}
+    <li class="breadcrumb-item"><a href="{% url 'class_subjects' material.subject.class_ref.id %}" class="text-decoration-none text-muted">{{ material.subject.class_ref.name }}</a></li>
+    {% endif %}
+    {% if material.subject %}
+    <li class="breadcrumb-item"><a href="{% url 'subject_materials' material.subject.id %}" class="text-decoration-none text-muted">{{ material.subject.name }}</a></li>
+    {% endif %}
+    <li class="breadcrumb-item active text-dark" aria-current="page">{{ material.title|truncatechars:30 }}</li>
+{% endblock %}
+
+{% block content_body %}
+<div class="row g-4 justify-content-center">
+    <div class="col-lg-9">
+        <!-- Main Document Detail Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+            <div class="d-flex align-items-start gap-3 mb-4 flex-wrap">
+                <div class="stat-icon-wrapper {% if material.material_type == 'past_paper' %}stat-indigo{% elif material.material_type == 'marking_scheme' %}stat-emerald{% else %}stat-sky{% endif %}" style="width: 56px; height: 56px; font-size: 1.5rem; flex-shrink: 0;">
+                    {% if material.material_type == 'past_paper' %}
+                        <i class="bi bi-file-earmark-pdf-fill"></i>
+                    {% elif material.material_type == 'marking_scheme' %}
+                        <i class="bi bi-check-circle-fill"></i>
+                    {% elif material.material_type == 'notes' %}
+                        <i class="bi bi-journal-text"></i>
+                    {% else %}
+                        <i class="bi bi-file-earmark-text"></i>
+                    {% endif %}
+                </div>
+
+                <div class="flex-grow-1">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <span class="rev-type-pill {{ material.material_type }}">
+                            {{ material.get_material_type_display }}
+                        </span>
+                        {% if material.is_free %}
+                            <span class="rev-price-pill free"><i class="bi bi-unlock"></i> Free Download</span>
+                        {% else %}
+                            <span class="rev-price-pill paid"><i class="bi bi-lock"></i> KSH {{ material.price }}</span>
+                        {% endif %}
+                        {% if material.material_type == 'marking_scheme' %}
+                            <span class="badge bg-warning-subtle text-warning border-0"><i class="bi bi-shield-lock me-1"></i> Marking Scheme</span>
+                        {% endif %}
+                    </div>
+                    <h3 class="fw-bold text-dark mb-1">{{ material.title }}</h3>
+                </div>
+            </div>
+
+            <!-- Meta Grid -->
+            <div class="p-3 bg-light rounded-3 border mb-4">
+                <div class="row g-3 text-center text-sm-start">
+                    <div class="col-sm-3 col-6">
+                        <span class="d-block small text-muted">Subject</span>
+                        <strong class="text-dark">{{ material.subject.name }}</strong>
+                    </div>
+                    <div class="col-sm-3 col-6">
+                        <span class="d-block small text-muted">Class / Form</span>
+                        <strong class="text-dark">{{ material.subject.class_ref.name|default:"General" }}</strong>
+                    </div>
+                    <div class="col-sm-3 col-6">
+                        <span class="d-block small text-muted">Curriculum</span>
+                        <strong class="text-dark">
+                            {% if material.subject.class_ref.curriculum == 'cbe' %}CBC{% else %}8-4-4{% endif %}
+                        </strong>
+                    </div>
+                    <div class="col-sm-3 col-6">
+                        <span class="d-block small text-muted">Downloads</span>
+                        <strong class="text-primary"><i class="bi bi-download me-1"></i>{{ material.download_count }}</strong>
+                    </div>
+                    {% if material.year %}
+                    <div class="col-sm-3 col-6">
+                        <span class="d-block small text-muted">Year</span>
+                        <strong class="text-dark">{{ material.year }}</strong>
+                    </div>
+                    {% endif %}
+                    {% if material.term and material.term != 'all' %}
+                    <div class="col-sm-3 col-6">
+                        <span class="d-block small text-muted">Term</span>
+                        <strong class="text-dark">{{ material.get_term_display }}</strong>
+                    </div>
+                    {% endif %}
+                    <div class="col-sm-3 col-6">
+                        <span class="d-block small text-muted">Published</span>
+                        <strong class="text-dark">{{ material.created_at|date:"M d, Y" }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-4">
+                <h6 class="fw-bold text-dark mb-2"><i class="bi bi-text-paragraph text-primary me-1"></i> Overview &amp; Curriculum Description</h6>
+                <p class="text-muted" style="line-height: 1.7;">
+                    {% if material.description %}
+                    {{ material.description }}
+                    {% else %}
+                    Official Kenyan educational revision resource prepared in alignment with Kenya National Examinations Council (KNEC) assessment guidelines and classroom curricula.
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Related Material Link (e.g. Marking Scheme for a Past Paper) -->
+            {% if material.related_material %}
+            <div class="p-3 mb-4 rounded-3 border" style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3) !important;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <span class="badge bg-warning text-dark fw-bold mb-1">
+                            <i class="bi bi-link-45deg"></i>
+                            {% if material.material_type == 'past_paper' %}Linked Marking Scheme{% else %}Linked Examination Paper{% endif %}
+                        </span>
+                        <h6 class="fw-bold mb-0 text-dark">{{ material.related_material.title }}</h6>
+                        <small class="text-muted">{{ material.related_material.get_material_type_display }}</small>
+                    </div>
+                    <a href="{% url 'material_detail' material.related_material.id %}" class="btn btn-sm btn-warning rounded-pill px-3 fw-semibold">
+                        View Document <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="d-flex flex-wrap gap-3 pt-3 border-top">
+                <a href="{% url 'preview_material' material.id %}" class="btn btn-outline-primary rounded-pill px-4 py-2 flex-grow-1 d-flex align-items-center justify-content-center gap-2 fw-semibold">
+                    <i class="bi bi-eye"></i> Preview Document
+                </a>
+                <a href="{% url 'download_material' material.id %}" class="btn btn-primary rounded-pill px-4 py-2 flex-grow-1 d-flex align-items-center justify-content-center gap-2 fw-semibold">
+                    <i class="bi bi-cloud-arrow-down-fill"></i> Download Material
+                </a>
+            </div>
+            
+            <p class="text-center text-muted small mb-0 mt-3">
+                <i class="bi bi-info-circle me-1"></i>
+                {% if material.is_free %}
+                This revision resource is free for instant download. Preview is also available.
+                {% else %}
+                Access fee of KSH {{ material.price }} applies. Sample pages can be viewed free in the previewer.
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Back & Navigation Buttons -->
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <a href="{% url 'search_materials' %}" class="btn btn-outline-secondary rounded-pill px-3 py-1 btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to Revision Library
+            </a>
+            <div class="d-flex gap-2">
+                {% if user.is_authenticated and user.is_staff %}
+                <a href="{% url 'link_material' %}" class="btn btn-outline-warning rounded-pill px-3 py-1 btn-sm">
+                    <i class="bi bi-link-45deg me-1"></i> Link Marking Scheme
+                </a>
+                {% endif %}
+                <a href="{% url 'browse_by_subject' %}" class="btn btn-outline-primary rounded-pill px-3 py-1 btn-sm">
+                    <i class="bi bi-book me-1"></i> All Subjects
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Register Your School — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 bg-white">
+                <div class="text-center mb-4">
+                    <div class="stat-icon-wrapper stat-emerald mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.75rem;">
+                        <i class="bi bi-building-fill"></i>
+                    </div>
+                    <span class="converter-badge-new">Institutional Portal</span>
+                    <h2 class="fw-bold text-dark mb-1">Register Your School</h2>
+                    <p class="text-muted small">Set up your school's multi-teacher subscription account for termly curriculum downloads and lesson tools.</p>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+                        <i class="bi bi-person-lock text-primary me-2"></i> School Admin Credentials
+                    </h5>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark small">Username <span class="text-danger">*</span></label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark small">Official School Email <span class="text-danger">*</span></label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark small">Password <span class="text-danger">*</span></label>
+                            {{ form.password1 }}
+                            {% if form.password1.errors %}
+                                <div class="text-danger small mt-1">{{ form.password1.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark small">Confirm Password <span class="text-danger">*</span></label>
+                            {{ form.password2 }}
+                            {% if form.password2.errors %}
+                                <div class="text-danger small mt-1">{{ form.password2.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold text-dark mb-3 border-bottom pb-2">
+                        <i class="bi bi-geo-alt-fill text-success me-2"></i> School Details
+                    </h5>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark small">School Name <span class="text-danger">*</span></label>
+                            {{ form.school_name }}
+                            {% if form.school_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.school_name.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark small">Official Phone Number <span class="text-danger">*</span></label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="text-danger small mt-1">{{ form.phone.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark small">Principal / Headteacher Name</label>
+                            {{ form.principal_name }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-dark small">Physical Address / County</label>
+                            {{ form.school_address }}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm">
+                        <i class="bi bi-building-check me-2"></i> Create School Account &amp; Continue
+                    </button>
+                </form>
+
+                <div class="text-center mt-4 pt-3 border-top">
+                    <span class="text-muted small">Registering as an individual instead?</span>
+                    <a href="{% url 'user_register' %}" class="fw-bold small text-primary text-decoration-none ms-1">
+                        Register Individual Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

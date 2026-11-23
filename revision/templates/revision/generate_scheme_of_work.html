@@ -1,0 +1,97 @@
+{% extends 'revision/base_revision.html' %}
+
+{% block subtitle %}Generate Scheme of Work{% endblock %}
+
+{% block extra_head %}
+<style>
+    .scheme-builder{--builder-ink:#17243d;--builder-line:#e3eaf3}
+    .scheme-builder .builder-hero{padding:1.75rem 2rem;border-radius:22px;color:#fff;background:linear-gradient(120deg,#14213d,#29477e 65%,#3157d5)}
+    .scheme-builder .builder-hero h2{font-weight:850;letter-spacing:-.04em}
+    .scheme-builder .builder-card{border:1px solid var(--builder-line);border-radius:22px;box-shadow:0 15px 40px rgba(20,37,67,.07)}
+    .scheme-builder .builder-card select,.scheme-builder .builder-card input,.scheme-builder .builder-card textarea{border-radius:12px;border-color:#dbe3ee;padding:.75rem .9rem}
+    .scheme-builder .builder-card select,.scheme-builder .builder-card input{min-height:50px}
+    .scheme-builder .builder-card textarea{min-height:120px}
+    .scheme-builder .builder-label{font-size:.77rem;letter-spacing:.04em;color:#485770;font-weight:750}
+    .scheme-builder .builder-section{padding:1rem 1.1rem;background:#f7f9fc;border:1px solid var(--builder-line);border-radius:16px}
+</style>
+{% endblock %}
+
+{% block heading %}
+    <span><i class="bi bi-calendar-week" style="color: var(--primary);"></i> Generate Scheme of Work</span>
+{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active" style="color: var(--gray-400);">Generate Scheme of Work</li>
+{% endblock %}
+
+{% block content_body %}
+<div class="scheme-builder animate-fade-in">
+    <header class="builder-hero mb-4">
+        <div class="small text-white-50 text-uppercase fw-bold mb-1" style="letter-spacing:.12em;">Planning studio</div>
+        <h2 class="mb-2"><i class="bi bi-magic me-2"></i>Build a Scheme of Work</h2>
+        <p class="text-white-50 mb-0">Set the teaching context and learning goals. We’ll prepare an editable, classroom-ready document.</p>
+    </header>
+
+    <form method="post" class="builder-card bg-white p-3 p-md-4 p-lg-5">
+        {% csrf_token %}
+        <div class="builder-section mb-4">
+            <div class="fw-bold text-dark mb-1">Teaching context</div>
+            <div class="text-muted small">Choose the class, subject, and teaching period for this plan.</div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label builder-label">{{ form.class_ref.label }}</label>
+                    {{ form.class_ref }}
+                    {{ form.class_ref.errors }}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label builder-label">{{ form.subject.label }}</label>
+                    {{ form.subject }}
+                    {{ form.subject.errors }}
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label builder-label">{{ form.term.label }}</label>
+                    {{ form.term }}
+                    {{ form.term.errors }}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label builder-label">{{ form.weeks_count.label }}</label>
+                    {{ form.weeks_count }}
+                    {{ form.weeks_count.errors }}
+                </div>
+            </div>
+        </div>
+
+        <div class="builder-section my-3">
+            <div class="fw-bold text-dark mb-1">Learning plan</div>
+            <div class="text-muted small">Outline topics and describe the outcomes learners should achieve.</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label builder-label">{{ form.topics.label }}</label>
+            {{ form.topics }}
+            {{ form.topics.errors }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label builder-label">{{ form.objectives.label }}</label>
+            {{ form.objectives }}
+            {{ form.objectives.errors }}
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'revision_home' %}" class="btn btn-light rounded-pill px-4">Cancel</a>
+            <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-bold"><i class="bi bi-file-earmark-word me-2"></i>Generate scheme</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

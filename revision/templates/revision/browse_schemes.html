@@ -1,0 +1,106 @@
+{% extends 'revision/base_revision.html' %}
+
+{% block subtitle %}Schemes of Work{% endblock %}
+
+{% block extra_head %}
+<style>
+    .revision-schemes{--rs-ink:#17243d;--rs-muted:#68768c;--rs-line:#e3eaf3}
+    .revision-schemes .rs-hero{padding:1.75rem 2rem;border-radius:22px;color:#fff;background:linear-gradient(120deg,#14213d,#29477e 65%,#3157d5);box-shadow:0 18px 40px rgba(20,37,67,.14)}
+    .revision-schemes .rs-hero h2{font-weight:850;letter-spacing:-.04em}
+    .revision-schemes .rs-filter{background:#fff;border:1px solid var(--rs-line);border-radius:18px;padding:1rem}
+    .revision-schemes .rs-card{height:100%;border:1px solid var(--rs-line);border-radius:18px;background:#fff;transition:transform .2s ease,box-shadow .2s ease}
+    .revision-schemes .rs-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(20,37,67,.09)}
+    .revision-schemes .rs-icon{width:44px;height:44px;display:grid;place-items:center;flex:0 0 44px;border-radius:14px;background:#edf2ff;color:#3157d5;font-size:1.15rem}
+    .revision-schemes .rs-tag{display:inline-flex;padding:.35rem .65rem;border-radius:8px;background:#f2f5f9;color:#526177;font-size:.73rem;font-weight:700}
+</style>
+{% endblock %}
+
+{% block heading %}
+    <span><i class="bi bi-calendar-week" style="color: var(--primary);"></i> Schemes of Work</span>
+{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'revision_home' %}" style="color: var(--primary); text-decoration: none;">Revision Home</a></li>
+    <li class="breadcrumb-item active" style="color: var(--gray-400);">Schemes</li>
+{% endblock %}
+
+{% block content_body %}
+<div class="revision-schemes">
+<div class="rs-hero mb-4 d-flex align-items-center justify-content-between gap-3 flex-wrap">
+    <div>
+        <div class="small text-white-50 text-uppercase fw-bold mb-1" style="letter-spacing:.12em;">Planning library</div>
+        <h2 class="mb-1">Schemes of Work</h2>
+        <p class="mb-0 text-white-50">Browse, personalize, and download editable teaching plans.</p>
+    </div>
+    {% if user.is_authenticated and user.is_staff %}
+    <a href="/admin/revision/schemeofwork/add/" class="btn btn-light rounded-pill px-4 fw-semibold">
+        <i class="bi bi-cloud-arrow-up me-1"></i> Upload scheme
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="rs-filter mb-4">
+    <form method="GET" class="d-flex align-items-end gap-2 flex-wrap flex-grow-1">
+        <select name="curriculum" class="form-select" onchange="this.form.submit()" style="border-radius:12px;min-height:46px;">
+            <option value="">All Curricula</option>
+            {% for value, label in curricula %}
+            <option value="{{ value }}" {% if selected_curriculum == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="level" class="form-select" onchange="this.form.submit()" style="border-radius:12px;min-height:46px;">
+            <option value="">All Levels</option>
+            {% for value, label in levels %}
+            <option value="{{ value }}" {% if selected_level == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-funnel"></i> Filter
+        </button>
+        <a href="{% url 'browse_schemes' %}" class="btn btn-light rounded-pill px-4">Clear</a>
+    </form>
+</div>
+
+<!-- Schemes List -->
+{% if schemes %}
+<div class="row g-3">
+    {% for scheme in schemes %}
+    <div class="col-md-6 col-xl-4">
+      <article class="rs-card p-3 p-lg-4 d-flex flex-column">
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="rs-icon"><i class="bi bi-journal-check"></i></div>
+            <div class="min-w-0">
+                <div class="small text-uppercase text-muted fw-bold" style="letter-spacing:.08em;">{{ scheme.subject.name }}</div>
+                <h3 class="h6 fw-bold text-dark mb-0">{{ scheme.title }}</h3>
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap mb-3">
+            <span class="rs-tag">{{ scheme.class_ref.name }}</span>
+            <span class="rs-tag">{{ scheme.get_term_display }}</span>
+            <span class="rs-tag">{{ scheme.academic_year }}</span>
+        </div>
+        {% if scheme.description %}<p class="small text-muted mb-3">{{ scheme.description|truncatechars:90 }}</p>{% endif %}
+        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-auto pt-3 border-top">
+            <span class="small text-muted"><i class="bi bi-download me-1"></i>{{ scheme.download_count }}</span>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'scheme_coverage' scheme.id %}" class="btn btn-outline-primary rounded-pill px-3">
+                    <i class="bi bi-check2-square me-1"></i> Track coverage
+                </a>
+                <a href="{% url 'scheme_download_details' scheme.id %}" class="btn btn-primary rounded-pill px-3">
+                    <i class="bi bi-download me-1"></i> Get scheme
+                </a>
+            </div>
+        </div>
+      </article>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="revision-empty animate-fade-in">
+    <div class="revision-empty-icon"><i class="bi bi-calendar-x"></i></div>
+    <h6>No Schemes of Work Found</h6>
+    <p>Check back later or upload a new scheme.</p>
+</div>
+{% endif %}
+</div>
+{% endblock %}

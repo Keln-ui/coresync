@@ -1,0 +1,141 @@
+{% extends 'revision/base_revision.html' %}
+
+{% block subtitle %}Preview - {{ material.title }}{% endblock %}
+
+{% block heading %}Document Preview{% endblock %}
+
+{% block breadcrumb %}
+    {% if material.subject and material.subject.class_ref %}
+    <li class="breadcrumb-item"><a href="{% url 'class_subjects' material.subject.class_ref.id %}" class="text-decoration-none text-muted">{{ material.subject.class_ref.name }}</a></li>
+    {% endif %}
+    {% if material.subject %}
+    <li class="breadcrumb-item"><a href="{% url 'subject_materials' material.subject.id %}" class="text-decoration-none text-muted">{{ material.subject.name }}</a></li>
+    {% endif %}
+    <li class="breadcrumb-item"><a href="{% url 'material_detail' material.id %}" class="text-decoration-none text-muted">{{ material.title|truncatechars:20 }}</a></li>
+    <li class="breadcrumb-item active text-dark">Preview</li>
+{% endblock %}
+
+{% block content_body %}
+<!-- Preview Banner -->
+<div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace">
+                    <i class="bi bi-file-earmark-text me-1"></i> {{ file_type|default:"PDF" }}
+                </span>
+                <span class="rev-type-pill {{ material.material_type }}">
+                    {{ material.get_material_type_display }}
+                </span>
+            </div>
+            <h4 class="fw-bold text-dark mb-1">{{ material.title }}</h4>
+            <p class="text-muted small mb-0">
+                {% if preview_available %}
+                Displaying sample text preview (first {{ preview_pages }} page{{ preview_pages|pluralize }} of {{ total_pages }} total).
+                {% else %}
+                Text preview generated for classroom review. Full file available for download.
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{% url 'material_detail' material.id %}" class="btn btn-outline-secondary rounded-pill px-3 py-1 btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Details
+            </a>
+            <a href="{% url 'download_material' material.id %}" class="btn btn-primary rounded-pill px-3 py-1 btn-sm">
+                <i class="bi bi-cloud-arrow-down-fill me-1"></i> Download
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Document Preview Box -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <h6 class="fw-bold text-dark pb-3 border-bottom mb-3">
+                <i class="bi bi-file-text text-primary me-2"></i> Content Preview
+            </h6>
+
+            <div class="p-4 bg-light rounded-3 font-monospace small border text-dark mb-3" style="min-height: 280px; max-height: 520px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6;">
+                {% if preview_available and preview_text %}
+                    {{ preview_text }}
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-file-earmark-lock fs-1 d-block mb-2 text-primary opacity-50"></i>
+                        <h6 class="fw-bold text-dark">Direct File Review Available</h6>
+                        <p class="small mb-0">This document format is best viewed by downloading the file directly to your device.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if total_pages > preview_pages %}
+            <div class="alert alert-info border-0 rounded-3 d-flex align-items-center mb-0" role="alert">
+                <i class="bi bi-info-circle-fill fs-5 me-2 text-info"></i>
+                <div class="small">
+                    This is a preview excerpt.
+                    {% if material.is_free %}
+                    <strong>Download the complete document</strong> to view all {{ total_pages }} pages.
+                    {% else %}
+                    <strong>Purchase access (KSH {{ material.price }})</strong> to download the complete {{ total_pages }}-page document.
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar Info & Actions -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+            <h6 class="fw-bold text-dark pb-2 border-bottom mb-3">
+                <i class="bi bi-info-circle text-primary me-2"></i> Document Information
+            </h6>
+            
+            <div class="d-flex flex-column gap-2 small">
+                <div class="d-flex justify-content-between pb-2 border-bottom">
+                    <span class="text-muted">Subject:</span>
+                    <strong class="text-dark">{{ material.subject.name }}</strong>
+                </div>
+                <div class="d-flex justify-content-between pb-2 border-bottom">
+                    <span class="text-muted">Class:</span>
+                    <strong class="text-dark">{{ material.subject.class_ref.name|default:"General" }}</strong>
+                </div>
+                <div class="d-flex justify-content-between pb-2 border-bottom">
+                    <span class="text-muted">Pages:</span>
+                    <strong class="text-dark">{{ total_pages }}</strong>
+                </div>
+                <div class="d-flex justify-content-between pb-2 border-bottom">
+                    <span class="text-muted">Downloads:</span>
+                    <strong class="text-primary"><i class="bi bi-download me-1"></i>{{ material.download_count }}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Access:</span>
+                    {% if material.is_free %}
+                    <span class="badge bg-success-subtle text-success">Free</span>
+                    {% else %}
+                    <span class="badge bg-primary-subtle text-primary">KSH {{ material.price }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <h6 class="fw-bold text-dark mb-3">
+                <i class="bi bi-lightning-charge text-warning me-2"></i> Quick Actions
+            </h6>
+            <div class="d-grid gap-2">
+                <a href="{% url 'download_material' material.id %}" class="btn btn-primary rounded-pill py-2 fw-semibold">
+                    <i class="bi bi-cloud-arrow-down-fill me-1"></i> Download File
+                </a>
+                <a href="{% url 'material_detail' material.id %}" class="btn btn-outline-secondary rounded-pill py-2">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Overview
+                </a>
+                <a href="{% url 'search_materials' %}" class="btn btn-light rounded-pill py-2 text-muted">
+                    <i class="bi bi-search me-1"></i> Search More Papers
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

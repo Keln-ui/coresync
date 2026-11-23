@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace small">WORKSPACE</span>
+                {% if user.is_staff %}
+                <span class="badge bg-warning-subtle text-warning rounded-pill px-3 py-1 small">Staff Admin</span>
+                {% endif %}
+            </div>
+            <h1 class="dashboard-title-modern mb-1">
+                <i class="bi bi-speedometer2 text-primary"></i> User Dashboard
+            </h1>
+            <p class="text-muted mb-0">Welcome back, <strong>{{ user.username }}</strong>! Here is an overview of your activity and document usage.</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'index' %}" class="btn btn-primary rounded-pill px-3 py-2">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> New Conversion
+            </a>
+            <a href="{% url 'user_profile' %}" class="btn btn-outline-secondary rounded-pill px-3 py-2">
+                <i class="bi bi-person-gear me-1"></i> Settings
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Conversions Metric -->
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Total Conversions</div>
+                    <div class="stat-number-modern">{{ total_conversions|default:0 }}</div>
+                    <small class="text-muted" style="font-size: 0.78rem;">Files processed</small>
+                </div>
+                <div class="stat-icon-wrapper stat-indigo">
+                    <i class="bi bi-file-earmark-arrow-up-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Spent Metric -->
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Total Investment</div>
+                    <div class="stat-number-modern">KSH {{ total_spent|floatformat:0 }}</div>
+                    <small class="text-muted" style="font-size: 0.78rem;">Paid via M-Pesa</small>
+                </div>
+                <div class="stat-icon-wrapper stat-emerald">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscription Metric -->
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Subscription Plan</div>
+                    <div class="stat-number-modern" style="font-size: 1.45rem;">
+                        {% if subscription_status == 'active' %}
+                            <span class="text-success">Active</span>
+                        {% elif subscription_status == 'pending' %}
+                            <span class="text-warning">Pending</span>
+                        {% else %}
+                            <span class="text-muted">Standard</span>
+                        {% endif %}
+                    </div>
+                    {% if subscription_end %}
+                    <small class="text-muted" style="font-size: 0.78rem;">Valid until {{ subscription_end|date:"M j, Y" }}</small>
+                    {% else %}
+                    <small class="text-muted" style="font-size: 0.78rem;">Pay-as-you-go</small>
+                    {% endif %}
+                </div>
+                <div class="stat-icon-wrapper stat-sky">
+                    <i class="bi bi-credit-card-2-front-fill"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Saved Files Metric -->
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-stat-card">
+                <div>
+                    <div class="stat-label-modern">Tool Suite Access</div>
+                    <div class="stat-number-modern">14 Tools</div>
+                    <small class="text-muted" style="font-size: 0.78rem;">Full PDF studio ready</small>
+                </div>
+                <div class="stat-icon-wrapper stat-amber">
+                    <i class="bi bi-tools"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Recent Activity Column -->
+        <div class="col-xl-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">
+                                <i class="bi bi-clock-history text-primary me-2"></i> Recent Conversions
+                            </h5>
+                            <p class="text-muted small mb-0">Download or view your recent document conversions</p>
+                        </div>
+                        <a href="{% url 'conversion_history' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            View All <i class="bi bi-arrow-right-short"></i>
+                        </a>
+                    </div>
+
+                    <div class="list-group list-group-flush">
+                        {% for conversion in recent_conversions %}
+                        <div class="list-group-item border-0 px-0 py-3 border-bottom d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="stat-icon-wrapper stat-indigo" style="width: 42px; height: 42px; font-size: 1.2rem;">
+                                    <i class="bi bi-file-earmark-richtext"></i>
+                                </div>
+                                <div>
+                                    <strong class="d-block text-dark small" style="word-break: break-all;">{{ conversion.original_pdf_filename|truncatechars:35 }}</strong>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <span class="badge bg-light text-secondary border small">{{ conversion.output_format|upper }}</span>
+                                        <small class="text-muted">{{ conversion.created_at|date:"M j, Y H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                {% if conversion.status == 'completed' %}
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 mb-1 d-inline-block small">Completed</span>
+                                    {% if conversion.converted_file %}
+                                    <div>
+                                        <a href="{{ conversion.converted_file.url }}" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 small">
+                                            <i class="bi bi-download me-1"></i> Download
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                {% elif conversion.status == 'failed' %}
+                                    <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1 small">Failed</span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1 small">Processing</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-folder2-open display-4 text-muted opacity-50 d-block mb-3"></i>
+                            <h6 class="fw-bold text-dark">No Conversions on Record</h6>
+                            <p class="text-muted small mb-3">Start converting PDFs to Word, slides, and other formats.</p>
+                            <a href="{% url 'index' %}" class="btn btn-primary rounded-pill px-4">
+                                <i class="bi bi-plus-lg me-1"></i> Convert Your First File
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Launch & Status Column -->
+        <div class="col-xl-5">
+            <div class="d-flex flex-column gap-4">
+                <!-- Action Hub Card -->
+                <div class="card border-0 shadow-sm rounded-4 bg-white">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3 text-dark">
+                            <i class="bi bi-lightning-charge-fill text-warning me-2"></i> Quick Actions
+                        </h5>
+
+                        {% if user.is_staff %}
+                        <div class="mb-3">
+                            <a href="{% url 'admin_dashboard_custom' %}" class="btn btn-primary w-100 py-2 rounded-3 text-start d-flex align-items-center justify-content-between">
+                                <span><i class="bi bi-shield-lock me-2"></i> Staff Admin Control Center</span>
+                                <i class="bi bi-chevron-right small"></i>
+                            </a>
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <a href="{% url 'index' %}#converter" class="btn btn-outline-light text-dark border w-100 p-3 text-start rounded-3 h-100 d-flex flex-column justify-content-between">
+                                    <i class="bi bi-arrow-repeat text-primary fs-4 mb-2"></i>
+                                    <div>
+                                        <strong class="d-block small">Convert Files</strong>
+                                        <small class="text-muted" style="font-size: 0.75rem;">PDF to Word/PPT</small>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-6">
+                                <a href="{% url 'index' %}#pdf-tools" class="btn btn-outline-light text-dark border w-100 p-3 text-start rounded-3 h-100 d-flex flex-column justify-content-between">
+                                    <i class="bi bi-tools text-success fs-4 mb-2"></i>
+                                    <div>
+                                        <strong class="d-block small">PDF Utilities</strong>
+                                        <small class="text-muted" style="font-size: 0.75rem;">Merge, split, compress</small>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-6">
+                                <a href="{% url 'sow_generator' %}" class="btn btn-outline-light text-dark border w-100 p-3 text-start rounded-3 h-100 d-flex flex-column justify-content-between">
+                                    <i class="bi bi-calendar-range text-info fs-4 mb-2"></i>
+                                    <div>
+                                        <strong class="d-block small">Scheme of Work</strong>
+                                        <small class="text-muted" style="font-size: 0.75rem;">Lesson planner</small>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-6">
+                                <a href="{% url 'search_materials' %}" class="btn btn-outline-light text-dark border w-100 p-3 text-start rounded-3 h-100 d-flex flex-column justify-content-between">
+                                    <i class="bi bi-journal-text text-warning fs-4 mb-2"></i>
+                                    <div>
+                                        <strong class="d-block small">Revision Hub</strong>
+                                        <small class="text-muted" style="font-size: 0.75rem;">Notes &amp; exams</small>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscription Upgrade Banner -->
+                <div class="card border-0 shadow-sm rounded-4" style="background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%); border: 1px solid #c7d2fe !important;">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-primary text-white rounded-pill px-2 py-1 small">UPGRADE</span>
+                            <h6 class="fw-bold mb-0 text-primary">CoreSynch Pro &amp; School Plans</h6>
+                        </div>
+                        <p class="text-muted small mb-3">Get unlimited PDF conversions, full access to CBC revision papers, and multi-teacher school accounts.</p>
+                        <a href="{% url 'subscription_plans' %}" class="btn btn-primary rounded-pill px-3 py-2 btn-sm w-100">
+                            <i class="bi bi-stars me-1"></i> View Subscription Plans
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

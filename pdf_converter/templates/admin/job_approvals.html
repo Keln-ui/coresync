@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Job Advertisement Approvals — Admin{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <span class="badge bg-warning-subtle text-warning rounded-pill px-3 py-1 font-monospace small mb-1">MODERATION QUEUE</span>
+            <h1 class="fw-bold text-dark mb-1">Job Advertisement Approvals</h1>
+            <p class="text-muted small mb-0">Review, approve, or reject user-submitted BOM and private tutoring job openings.</p>
+        </div>
+        <div>
+            <a href="{% url 'admin_dashboard_custom' %}" class="btn btn-outline-secondary rounded-pill px-3 py-2 btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Admin Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Pending Jobs -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+            <h4 class="fw-bold text-dark mb-0">
+                <i class="bi bi-clock-history text-warning me-2"></i> Pending Approvals ({{ pending_jobs|length }})
+            </h4>
+        </div>
+
+        {% if pending_jobs %}
+        <div class="row g-4">
+            {% for job in pending_jobs %}
+            <div class="col-lg-6">
+                <div class="card border rounded-4 p-4 h-100 shadow-xs bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge {% if job.job_type == 'bom' %}bg-primary{% else %}bg-success{% endif %} rounded-pill small">
+                            {% if job.job_type == 'bom' %}BOM School Job{% else %}Homeschooling Role{% endif %}
+                        </span>
+                        <small class="text-muted">{{ job.created_at|date:"M d, Y" }}</small>
+                    </div>
+
+                    <h5 class="fw-bold text-dark mb-1">{{ job.title }}</h5>
+                    <p class="text-muted small mb-3"><strong>{{ job.school_name }}</strong> &middot; <i class="bi bi-geo-alt-fill text-danger"></i> {{ job.location }}</p>
+
+                    <div class="p-3 bg-white rounded-3 border mb-3 small">
+                        <div class="text-muted mb-2"><strong>Salary:</strong> {{ job.salary_range|default:"Not specified" }}</div>
+                        <div class="text-muted mb-2"><strong>Description:</strong> {{ job.description|truncatewords:25 }}</div>
+                        {% if job.requirements %}
+                        <div class="text-muted"><strong>Requirements:</strong> {{ job.requirements|truncatewords:20 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="small text-muted mb-3">
+                        <i class="bi bi-envelope me-1"></i> {{ job.contact_email }}
+                        {% if job.contact_phone %} &middot; <i class="bi bi-telephone me-1"></i> {{ job.contact_phone }}{% endif %}
+                    </div>
+
+                    <div class="mt-auto pt-3 border-top">
+                        <form method="post" action="{% url 'admin_job_approvals' %}" class="d-flex gap-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="job_id" value="{{ job.id }}">
+                            <button type="submit" name="action" value="approve" class="btn btn-sm btn-success rounded-pill px-4 flex-grow-1">
+                                <i class="bi bi-check2-circle me-1"></i> Approve &amp; Publish
+                            </button>
+                            <button type="submit" name="action" value="reject" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                <i class="bi bi-trash me-1"></i> Reject
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-check2-all display-5 text-success mb-2 d-block"></i>
+            <h6 class="fw-bold text-dark">Queue Clear</h6>
+            <p class="small mb-0">No job advertisements waiting for approval at this time.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Approved Active Jobs -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+            <h4 class="fw-bold text-dark mb-0">
+                <i class="bi bi-check-circle-fill text-success me-2"></i> Live Approved Positions ({{ approved_jobs|length }})
+            </h4>
+        </div>
+
+        {% if approved_jobs %}
+        <div class="row g-4">
+            {% for job in approved_jobs %}
+            <div class="col-lg-6">
+                <div class="card border rounded-4 p-4 h-100 shadow-xs bg-white">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-light text-secondary border small">{{ job.get_employment_type_display }}</span>
+                        {% if job.featured %}
+                        <span class="badge bg-warning text-dark rounded-pill small"><i class="bi bi-star-fill me-1"></i> Featured</span>
+                        {% endif %}
+                    </div>
+
+                    <h5 class="fw-bold text-dark mb-1">{{ job.title }}</h5>
+                    <p class="text-muted small mb-2">{{ job.school_name }} &middot; {{ job.location }}</p>
+
+                    <div class="mt-auto pt-3 border-top d-flex gap-2 justify-content-between align-items-center">
+                        <span class="fw-bold small text-dark">{{ job.salary_range }}</span>
+                        <form method="post" action="{% url 'admin_job_approvals' %}" class="d-flex gap-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="job_id" value="{{ job.id }}">
+                            <button type="submit" name="action" value="toggle_featured" class="btn btn-sm btn-outline-warning rounded-pill text-dark">
+                                <i class="bi bi-star me-1"></i> {% if job.featured %}Unfeature{% else %}Feature{% endif %}
+                            </button>
+                            <button type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger rounded-pill">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <p class="small mb-0">No approved jobs in database.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

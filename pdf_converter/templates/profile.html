@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile — CoreSynch{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <!-- Profile Header Card -->
+            {% if school_profile %}
+            <!-- School Profile Header -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white p-4 p-md-5">
+                <div class="d-flex flex-wrap align-items-center gap-4">
+                    <div class="stat-icon-wrapper stat-emerald" style="width: 72px; height: 72px; font-size: 2rem;">
+                        <i class="bi bi-building-fill"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 font-monospace small">SCHOOL ACCOUNT</span>
+                            {% if school_profile.has_active_subscription %}
+                            <span class="badge bg-success text-white rounded-pill px-3 py-1 small">Active Subscription</span>
+                            {% else %}
+                            <span class="badge bg-warning-subtle text-warning rounded-pill px-3 py-1 small">No Active Plan</span>
+                            {% endif %}
+                        </div>
+                        <h2 class="fw-bold text-dark mb-1">{{ school_profile.school_name }}</h2>
+                        <p class="text-muted small mb-0">{{ user.email|default:"No email registered" }} &middot; {{ school_profile.phone }}</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'edit_profile' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                            <i class="bi bi-pencil me-1"></i> Edit Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Regular User Profile Header -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white p-4 p-md-5">
+                <div class="d-flex flex-wrap align-items-center gap-4">
+                    <div class="stat-icon-wrapper stat-indigo" style="width: 72px; height: 72px; font-size: 2rem;">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 font-monospace small">INDIVIDUAL ACCOUNT</span>
+                            {% if user.is_staff %}
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1 small">Administrator</span>
+                            {% endif %}
+                        </div>
+                        <h2 class="fw-bold text-dark mb-1">{{ user.username }}</h2>
+                        <p class="text-muted small mb-0">{{ user.email|default:"No email provided" }} &middot; Member since {{ user.date_joined|date:"F Y" }}</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'edit_profile' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                            <i class="bi bi-pencil me-1"></i> Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Stats Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="dashboard-stat-card">
+                        <div>
+                            <div class="stat-label-modern">Total Conversions</div>
+                            <div class="stat-number-modern">{{ total_conversions|default:0 }}</div>
+                            <small class="text-muted" style="font-size: 0.78rem;">Files uploaded</small>
+                        </div>
+                        <div class="stat-icon-wrapper stat-indigo">
+                            <i class="bi bi-file-earmark-arrow-up"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="dashboard-stat-card">
+                        <div>
+                            <div class="stat-label-modern">Paid Conversions</div>
+                            <div class="stat-number-modern">{{ total_paid|default:0 }}</div>
+                            <small class="text-muted" style="font-size: 0.78rem;">Via M-Pesa</small>
+                        </div>
+                        <div class="stat-icon-wrapper stat-emerald">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="dashboard-stat-card">
+                        <div>
+                            <div class="stat-label-modern">Downloads</div>
+                            <div class="stat-number-modern">{{ total_conversions|default:0 }}</div>
+                            <small class="text-muted" style="font-size: 0.78rem;">Generated files</small>
+                        </div>
+                        <div class="stat-icon-wrapper stat-sky">
+                            <i class="bi bi-download"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversion History Table -->
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-clock-history text-primary me-2"></i> Conversion History
+                    </h5>
+                    <a href="{% url 'index' %}" class="btn btn-sm btn-primary rounded-pill px-3">
+                        <i class="bi bi-plus-lg me-1"></i> New Conversion
+                    </a>
+                </div>
+
+                {% if conversions %}
+                <div class="saas-table-wrapper border">
+                    <table class="saas-table">
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Format</th>
+                                <th>Pages</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for conversion in conversions %}
+                            <tr>
+                                <td>
+                                    <strong class="text-dark small d-block" style="word-break: break-all;">
+                                        {{ conversion.original_pdf_filename|truncatechars:28 }}
+                                    </strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-secondary border small">{{ conversion.get_output_format_display }}</span>
+                                </td>
+                                <td>{{ conversion.page_count }}</td>
+                                <td>KSH {{ conversion.cost }}</td>
+                                <td>
+                                    {% if conversion.payment_status == 'paid' %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small">Paid</span>
+                                    {% elif conversion.payment_status == 'pending' %}
+                                        <span class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1 small">Pending</span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1 small">Failed</span>
+                                    {% endif %}
+                                </td>
+                                <td><small class="text-muted">{{ conversion.created_at|date:"M d, Y" }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-folder2-open display-5 text-muted opacity-50 d-block mb-3"></i>
+                    <h6 class="fw-bold text-dark">No Conversions on Record</h6>
+                    <p class="text-muted small mb-3">Start converting PDFs and Word files to see your activity logged here.</p>
+                    <a href="{% url 'index' %}" class="btn btn-primary rounded-pill px-4">Convert a File Now</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

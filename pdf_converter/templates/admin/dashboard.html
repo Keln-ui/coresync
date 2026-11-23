@@ -1,0 +1,497 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - Core Synch Solutions{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="admin-header-left">
+            <h1 class="admin-title">
+                <i class="bi bi-speedometer2"></i> Admin Dashboard
+            </h1>
+            <p class="admin-subtitle">
+                <i class="bi bi-calendar3"></i> 
+                {% if daily_stats %}
+                    {{ daily_stats.0.date|date:"l, F j, Y" }}
+                {% else %}
+                    Today
+                {% endif %}
+                <span class="admin-divider">•</span>
+                <i class="bi bi-arrow-repeat"></i> Live overview
+            </p>
+        </div>
+        <div class="admin-header-right">
+            <a href="{% url 'admin_job_approvals' %}" class="btn-admin-warning">
+                <i class="bi bi-briefcase"></i> Job Approvals
+            </a>
+            <a href="/admin/" class="btn-admin-secondary">
+                <i class="bi bi-gear"></i> Django Admin
+            </a>
+            <a href="/" class="btn-admin-primary">
+                <i class="bi bi-house"></i> Main Site
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card admin-stat-purple">
+            <div class="admin-stat-icon">
+                <i class="bi bi-file-earmark-arrow-up"></i>
+            </div>
+            <div class="admin-stat-content">
+                <div class="admin-stat-label">Total Conversions</div>
+                <div class="admin-stat-value">{{ total_conversions }}</div>
+            </div>
+        </div>
+        <div class="admin-stat-card admin-stat-green">
+            <div class="admin-stat-icon">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div class="admin-stat-content">
+                <div class="admin-stat-label">Revenue</div>
+                <div class="admin-stat-value">KSH {{ total_revenue|floatformat:0 }}</div>
+            </div>
+        </div>
+        <div class="admin-stat-card admin-stat-amber">
+            <div class="admin-stat-icon">
+                <i class="bi bi-journals"></i>
+            </div>
+            <div class="admin-stat-content">
+                <div class="admin-stat-label">Materials</div>
+                <div class="admin-stat-value">{{ total_materials }}</div>
+            </div>
+        </div>
+        <div class="admin-stat-card admin-stat-blue">
+            <div class="admin-stat-icon">
+                <i class="bi bi-download"></i>
+            </div>
+            <div class="admin-stat-content">
+                <div class="admin-stat-label">Downloads</div>
+                <div class="admin-stat-value">{{ total_downloads }}</div>
+            </div>
+        </div>
+        <div class="admin-stat-card admin-stat-pink">
+            <div class="admin-stat-icon">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="admin-stat-content">
+                <div class="admin-stat-label">Total Users</div>
+                <div class="admin-stat-value">{{ total_users }}</div>
+            </div>
+        </div>
+        <div class="admin-stat-card admin-stat-teal">
+            <div class="admin-stat-icon">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="admin-stat-content">
+                <div class="admin-stat-label">Schools</div>
+                <div class="admin-stat-value">{{ total_schools }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Mode Control -->
+    <div class="admin-payment-control {% if is_free_period %}admin-payment-free{% else %}admin-payment-paid{% endif %}">
+        <div class="admin-payment-content">
+            <div class="admin-payment-info">
+                <div class="admin-payment-status">
+                    <i class="bi bi-{% if is_free_period %}unlock{% else %}lock{% endif %}-fill"></i>
+                    {% if is_free_period %}Free Period Active{% else %}Paid Period Active{% endif %}
+                </div>
+                <div class="admin-payment-desc">
+                    {% if is_free_period %}
+                        All conversions and revision materials are currently free for users.
+                    {% else %}
+                        Users are being charged KSH {{ payment_settings.conversion_cost_per_page }}/page for conversions and KSH {{ payment_settings.global_revision_price }} for premium materials.
+                    {% endif %}
+                </div>
+            </div>
+            <div class="admin-payment-actions">
+                <a href="{% url 'admin_payment_settings' %}" class="btn-admin-action">
+                    <i class="bi bi-credit-card"></i> Payment Settings
+                </a>
+                <form method="POST" action="{% url 'toggle_free_period' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-admin-toggle {% if is_free_period %}btn-admin-warning{% else %}btn-admin-success{% endif %}">
+                        <i class="bi bi-{% if is_free_period %}lock{% else %}unlock{% endif %}"></i>
+                        {% if is_free_period %}Stop Free Period{% else %}Start Free Period{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Weekly Performance -->
+        <div class="col-xl-8">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 class="fw-bold mb-1" style="color: #1e293b;">
+                                <i class="bi bi-graph-up-arrow" style="color: #667eea;"></i> Weekly Performance
+                            </h5>
+                            <p class="text-muted mb-0" style="font-size: 0.9rem;">Daily conversion and payment activity</p>
+                        </div>
+                        <span class="badge bg-light text-dark" style="border-radius: 8px; font-size: 0.75rem;">
+                            <i class="bi bi-clock"></i> Updated now
+                        </span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th class="border-0" style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600;">Day</th>
+                                    <th class="border-0" style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600;">Date</th>
+                                    <th class="border-0 text-center" style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600;">Conversions</th>
+                                    <th class="border-0 text-center" style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600;">Payments</th>
+                                    <th class="border-0 text-end" style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 600;">Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day in daily_stats %}
+                                <tr style="border-bottom: 1px solid #f1f5f9;">
+                                    <td class="fw-semibold" style="color: #1e293b;">{{ day.date|date:"D" }}</td>
+                                    <td style="color: #64748b;">{{ day.date|date:"M j, Y" }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary" style="border-radius: 6px;">{{ day.conversions }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success bg-opacity-10 text-success" style="border-radius: 6px;">{{ day.payments }}</span>
+                                    </td>
+                                    <td class="text-end fw-semibold" style="color: #1e293b;">KSH {{ day.revenue|floatformat:0 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">No activity data available yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-xl-4">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 16px;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3" style="color: #1e293b;">
+                        <i class="bi bi-lightning-charge" style="color: #f59e0b;"></i> Quick Actions
+                    </h5>
+                    <p class="text-muted mb-4" style="font-size: 0.9rem;">Common admin tasks</p>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'admin_payment_settings' %}" class="btn text-start" style="border-radius: 10px; border: 1px solid #e2e8f0; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff;">
+                            <i class="bi bi-credit-card me-2"></i> Payment Settings
+                        </a>
+                        <a href="/admin/revision/schemeofwork/add/" class="btn text-start" style="border-radius: 10px; border: 1px solid #e2e8f0; background: linear-gradient(135deg, #059669, #10b981); color: #fff;">
+                            <i class="bi bi-upload me-2"></i> Upload Schemes of Work
+                        </a>
+                        <a href="/sow-generator/" class="btn text-start" style="border-radius: 10px; border: 1px solid #e2e8f0; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff;">
+                            <i class="bi bi-calendar-week me-2"></i> Scheme of Work Generator
+                        </a>
+                        <a href="/admin/plans/" class="btn btn-outline-primary text-start" style="border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <i class="bi bi-credit-card me-2"></i> Subscription Plans
+                        </a>
+                        <a href="/admin/revision/revisionmaterial/add/" class="btn btn-outline-success text-start" style="border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <i class="bi bi-upload me-2"></i> Upload Material
+                        </a>
+                        <a href="/admin/revision/subject/add/" class="btn btn-outline-info text-start" style="border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <i class="bi bi-journal-plus me-2"></i> Add Subject
+                        </a>
+                        <a href="/admin/revision/revisionmaterial/" class="btn btn-outline-warning text-start" style="border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <i class="bi bi-collection me-2"></i> All Materials
+                        </a>
+                        <a href="/admin/" class="btn btn-outline-secondary text-start" style="border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <i class="bi bi-gear me-2"></i> Django Admin
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Recent Activity -->
+        <div class="col-xl-6">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3" style="color: #1e293b;">
+                        <i class="bi bi-clock-history" style="color: #667eea;"></i> Recent Activity
+                    </h5>
+                    <p class="text-muted mb-4" style="font-size: 0.9rem;">Latest conversions and payments</p>
+                    
+                    <div class="list-group list-group-flush">
+                        {% for conversion in recent_conversions %}
+                        <div class="list-group-item border-0 px-0 py-3" style="border-bottom: 1px solid #f1f5f9;">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3" style="width: 40px; height: 40px; background: #eef2ff; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-file-earmark-richtext" style="color: #667eea;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold" style="color: #1e293b; font-size: 0.95rem;">{{ conversion.original_pdf_filename }}</div>
+                                    <small class="text-muted">{{ conversion.output_format|upper }} • {{ conversion.status }}</small>
+                                </div>
+                                <small class="text-muted" style="font-size: 0.85rem;">{{ conversion.created_at|date:"M j" }}</small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
+                            <p class="mb-0 mt-2">No recent conversions</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attention Needed -->
+        <div class="col-xl-6">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3" style="color: #1e293b;">
+                        <i class="bi bi-exclamation-triangle" style="color: #f59e0b;"></i> Attention Needed
+                    </h5>
+                    <p class="text-muted mb-4" style="font-size: 0.9rem;">Pending payments and issues</p>
+                    
+                    <div class="list-group list-group-flush">
+                        {% for payment in pending_payments %}
+                        <div class="list-group-item border-0 px-0 py-3" style="border-bottom: 1px solid #f1f5f9;">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3" style="width: 40px; height: 40px; background: #fef3c7; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-cash" style="color: #f59e0b;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold" style="color: #1e293b; font-size: 0.95rem;">{{ payment.phone_number }}</div>
+                                    <small class="text-muted">KSH {{ payment.amount }} • pending</small>
+                                </div>
+                                <small class="text-muted" style="font-size: 0.85rem;">{{ payment.created_at|date:"M j" }}</small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        {% if not failed_conversions %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-check2-circle" style="font-size: 2rem; opacity: 0.3; color: #10b981;"></i>
+                            <p class="mb-0 mt-2">All clear! No issues</p>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% for conversion in failed_conversions %}
+                        <div class="list-group-item border-0 px-0 py-3" style="border-bottom: 1px solid #f1f5f9;">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3" style="width: 40px; height: 40px; background: #fee2e2; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-x-circle" style="color: #ef4444;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold" style="color: #1e293b; font-size: 0.95rem;">{{ conversion.original_pdf_filename }}</div>
+                                    <small class="text-muted">{{ conversion.error_message|default:"Failed conversion" }}</small>
+                                </div>
+                                <small class="text-muted" style="font-size: 0.85rem;">{{ conversion.created_at|date:"M j" }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Overview -->
+    <div class="admin-content-grid">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title">
+                    <i class="bi bi-people"></i> User Management
+                </div>
+                <div class="admin-card-subtitle">User statistics and recent registrations</div>
+            </div>
+            <div class="admin-mini-stats">
+                <div class="admin-mini-stat">
+                    <div class="admin-mini-stat-value">{{ total_users }}</div>
+                    <div class="admin-mini-stat-label">Total Users</div>
+                </div>
+                <div class="admin-mini-stat">
+                    <div class="admin-mini-stat-value">{{ active_users }}</div>
+                    <div class="admin-mini-stat-label">Active</div>
+                </div>
+                <div class="admin-mini-stat">
+                    <div class="admin-mini-stat-value">{{ staff_users }}</div>
+                    <div class="admin-mini-stat-label">Staff</div>
+                </div>
+            </div>
+            <div class="admin-activity-list">
+                {% for user in recent_users %}
+                <div class="admin-activity-item">
+                    <div class="admin-activity-icon admin-activity-icon-purple">
+                        <i class="bi bi-person"></i>
+                    </div>
+                    <div class="admin-activity-content">
+                        <div class="admin-activity-title">{{ user.username }}</div>
+                        <div class="admin-activity-meta">{{ user.email|default:"No email" }}</div>
+                    </div>
+                    <div class="admin-activity-time">{{ user.date_joined|date:"M j" }}</div>
+                </div>
+                {% empty %}
+                <div class="admin-empty-state">
+                    <i class="bi bi-people"></i>
+                    <p>No users registered yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- School Subscriptions -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title">
+                    <i class="bi bi-building"></i> School Subscriptions
+                </div>
+                <div class="admin-card-subtitle">Active and expired school plans</div>
+            </div>
+            <div class="admin-mini-stats">
+                <div class="admin-mini-stat">
+                    <div class="admin-mini-stat-value">{{ total_schools }}</div>
+                    <div class="admin-mini-stat-label">Total Schools</div>
+                </div>
+                <div class="admin-mini-stat">
+                    <div class="admin-mini-stat-value">{{ active_subscriptions }}</div>
+                    <div class="admin-mini-stat-label">Active</div>
+                </div>
+                <div class="admin-mini-stat">
+                    <div class="admin-mini-stat-value">{{ expired_subscriptions }}</div>
+                    <div class="admin-mini-stat-label">Expired</div>
+                </div>
+            </div>
+            <div class="admin-activity-list">
+                {% for school in recent_schools %}
+                <div class="admin-activity-item">
+                    <div class="admin-activity-icon admin-activity-icon-green">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div class="admin-activity-content">
+                        <div class="admin-activity-title">{{ school.school_name }}</div>
+                        <div class="admin-activity-meta">{{ school.contact_person|default:"No contact" }}</div>
+                    </div>
+                    <div class="admin-activity-time">{{ school.created_at|date:"M j" }}</div>
+                </div>
+                {% empty %}
+                <div class="admin-empty-state">
+                    <i class="bi bi-building"></i>
+                    <p>No schools registered yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- System Health -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <div class="admin-card-title">
+                <i class="bi bi-heart-pulse"></i> System Health
+            </div>
+            <div class="admin-card-subtitle">Real-time system status and performance metrics</div>
+        </div>
+        <div class="admin-health-grid">
+            <div class="admin-health-item">
+                <div class="admin-health-label">Health Score</div>
+                <div class="admin-health-bar">
+                    <div class="admin-health-fill" style="width: {{ system_health_score }}%; background: {% if system_health_score >= 80 %}#10b981{% elif system_health_score >= 50 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
+                </div>
+                <div class="admin-health-value">{{ system_health_score|floatformat:0 }}%</div>
+            </div>
+            <div class="admin-health-item">
+                <div class="admin-health-label">Processing Conversions</div>
+                <div class="admin-health-value">{{ processing_conversions }}</div>
+            </div>
+            <div class="admin-health-item">
+                <div class="admin-health-label">Pending Payments</div>
+                <div class="admin-health-value">{{ pending_payments_count }}</div>
+            </div>
+            <div class="admin-health-item">
+                <div class="admin-health-label">Conversion Success Rate</div>
+                <div class="admin-health-value">{{ success_rate|floatformat:1 }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revision Materials Overview -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <div class="admin-card-title">
+                <i class="bi bi-journal-bookmark"></i> Revision Materials
+            </div>
+            <div class="admin-card-subtitle">Popular and recently added resources</div>
+        </div>
+        <div class="admin-materials-grid">
+            <div class="admin-material-section">
+                <h6>Top Materials</h6>
+                {% for material in top_materials %}
+                <div class="admin-material-item">
+                    <div class="admin-material-icon admin-material-icon-green">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                    <div class="admin-material-content">
+                        <div class="admin-material-title">{{ material.title }}</div>
+                        <div class="admin-material-meta">{{ material.download_count }} downloads</div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted small">No materials yet.</p>
+                {% endfor %}
+            </div>
+            <div class="admin-material-section">
+                <h6>Newest Uploads</h6>
+                {% for material in recent_materials %}
+                <div class="admin-material-item">
+                    <div class="admin-material-icon admin-material-icon-purple">
+                        <i class="bi bi-file-earmark-plus"></i>
+                    </div>
+                    <div class="admin-material-content">
+                        <div class="admin-material-title">{{ material.title }}</div>
+                        <div class="admin-material-meta">{{ material.created_at|date:"M j, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted small">Nothing added recently.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.dashboard-shell {
+    animation: fadeIn 0.4s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+.list-group-item {
+    transition: background-color 0.2s;
+}
+
+.list-group-item:hover {
+    background-color: #f8fafc;
+}
+</style>
+{% endblock %}

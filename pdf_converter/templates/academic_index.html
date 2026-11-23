@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}CoreSynch Academic — Empowering Educators and Learners{% endblock %}
+
+{% block content %}
+<div class="academic-home">
+  <!-- ============================================================
+       HERO SECTION
+       ============================================================ -->
+  <section class="home-hero academic-hero">
+    <div class="academic-hero-orb academic-hero-orb-one" aria-hidden="true"></div>
+    <div class="academic-hero-orb academic-hero-orb-two" aria-hidden="true"></div>
+    <div class="container">
+      <div class="academic-hero-layout">
+        <div class="academic-hero-copy">
+          <p class="academic-eyebrow"><span></span> KENYAN CURRICULUM PLATFORM</p>
+          <h1>Learn more.<br><span>Teach with confidence.</span></h1>
+          <p class="academic-intro">
+            Access thousands of CBC &amp; 8-4-4 revision materials, create lesson schemes of work in minutes, and discover verified teaching roles across Kenya.
+          </p>
+          
+          <div class="academic-actions">
+            <a class="academic-button-primary" href="{% url 'search_materials' %}">
+              <i class="bi bi-journal-bookmark-fill"></i> Explore Revision Library
+            </a>
+            <a class="academic-button-secondary" href="{% url 'sow_generator' %}">
+              <i class="bi bi-calendar2-range"></i> Scheme of Work
+            </a>
+            <a class="academic-button-secondary" href="{% url 'ai_assistant' %}">
+              <i class="bi bi-stars"></i> AI Assistant
+            </a>
+          </div>
+
+          <div class="home-hero-stats">
+            <div><strong>{{ total_materials|default:"1,000" }}+</strong><span>Study Resources</span></div>
+            <div><strong>{{ featured_jobs|length }}+</strong><span>Open Positions</span></div>
+            <div><strong>Free</strong><span>Lesson Planning</span></div>
+            <div><strong>100%</strong><span>CBC Aligned</span></div>
+          </div>
+        </div>
+
+        <div class="academic-preview">
+          <div class="academic-preview-top">
+            <div class="d-flex align-items-center gap-2">
+              <span class="workspace-mark" style="background: #ede9fe; color: #7c3aed;">
+                <i class="bi bi-mortarboard-fill"></i>
+              </span>
+              <div>
+                <strong style="font-size: 0.95rem; display: block;">Academic Hub</strong>
+                <small class="text-muted">CBC &amp; 8-4-4 Curriculum</small>
+              </div>
+            </div>
+            <span class="converter-live"><i></i> LIVE REVISION</span>
+          </div>
+
+          <div class="p-3 mb-3 bg-light rounded-3 border">
+            <span class="text-uppercase small fw-bold text-primary d-block mb-1">Instant Resource Access</span>
+            <h4 class="fw-bold mb-1" style="font-size: 1.25rem;">Revision Notes &amp; Past Papers</h4>
+            <p class="text-muted small mb-2">Download official KNEC past papers, termly marking schemes, and classroom notes.</p>
+            <a href="{% url 'search_materials' %}" class="fw-semibold small text-primary">Browse Revision Library <i class="bi bi-arrow-right"></i></a>
+          </div>
+
+          <div class="workspace-links">
+            <a href="{% url 'sow_generator' %}" class="academic-preview-shortcut">
+              <div class="d-flex align-items-center">
+                <span class="academic-preview-shortcut-icon academic-shortcut-amber">
+                  <i class="bi bi-calendar2-check"></i>
+                </span>
+                <div>
+                  <strong>Scheme of Work Generator</strong>
+                  <small>Automated lesson planning &amp; export</small>
+                </div>
+              </div>
+              <i class="bi bi-arrow-up-right text-muted"></i>
+            </a>
+
+            <a href="{% url 'bom_jobs' %}" class="academic-preview-shortcut">
+              <div class="d-flex align-items-center">
+                <span class="academic-preview-shortcut-icon academic-shortcut-green">
+                  <i class="bi bi-briefcase"></i>
+                </span>
+                <div>
+                  <strong>BOM Teaching Vacancies</strong>
+                  <small>{{ featured_jobs|length }} featured opportunities</small>
+                </div>
+              </div>
+              <i class="bi bi-arrow-up-right text-muted"></i>
+            </a>
+
+            <a href="{{ converter_home_url }}" class="academic-preview-shortcut">
+              <div class="d-flex align-items-center">
+                <span class="academic-preview-shortcut-icon workspace-icon-purple">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </span>
+                <div>
+                  <strong>Document Converter</strong>
+                  <small>PDF to Word &amp; 14 file utilities</small>
+                </div>
+              </div>
+              <i class="bi bi-arrow-up-right text-muted"></i>
+            </a>
+          </div>
+
+          <div class="academic-trust-note mt-3">
+            <i class="bi bi-check-circle-fill text-success"></i> Used daily by teachers and schools across Kenya
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       CORE TOOLS GRID
+       ============================================================ -->
+  <section class="academic-tools-section">
+    <div class="container">
+      <div class="academic-section-heading">
+        <span class="converter-badge-new">Essential Tools</span>
+        <h2>Everything You Need in One Unified Space</h2>
+        <p>Built specifically for Kenyan educators, students, and school administrators.</p>
+      </div>
+
+      <div class="academic-tools-grid">
+        <a class="academic-tool-card academic-tool-materials" href="{% url 'search_materials' %}">
+          <span class="academic-tool-icon"><i class="bi bi-journal-richtext"></i></span>
+          <span class="academic-tool-kicker">REVISE</span>
+          <h3>Revision Materials</h3>
+          <p>Explore comprehensive notes, past exams, and marking schemes across all forms and junior school grades.</p>
+          <span class="academic-tool-link">Open Library <i class="bi bi-arrow-up-right"></i></span>
+        </a>
+
+        <a class="academic-tool-card academic-tool-sow" href="{% url 'sow_generator' %}">
+          <span class="academic-tool-icon"><i class="bi bi-calendar-range"></i></span>
+          <span class="academic-tool-kicker">PLAN</span>
+          <h3>Scheme of Work Generator</h3>
+          <p>Create professionally formatted lesson schemes of work ready for submission and classroom teaching.</p>
+          <span class="academic-tool-link">Generate Scheme <i class="bi bi-arrow-up-right"></i></span>
+        </a>
+
+        <a class="academic-tool-card academic-tool-jobs" href="{% url 'bom_jobs' %}">
+          <span class="academic-tool-icon"><i class="bi bi-briefcase"></i></span>
+          <span class="academic-tool-kicker">CAREERS</span>
+          <h3>Teaching Opportunities</h3>
+          <p>Find Board of Management (BOM) vacancies and private homeschooling tutor positions throughout Kenya.</p>
+          <span class="academic-tool-link">Browse Roles <i class="bi bi-arrow-up-right"></i></span>
+        </a>
+
+        <a class="academic-tool-card academic-tool-converter" href="{{ converter_home_url }}">
+          <span class="academic-tool-icon"><i class="bi bi-file-earmark-diff"></i></span>
+          <span class="academic-tool-kicker">FILES</span>
+          <h3>Document Studio</h3>
+          <p>Convert exam papers, compress student reports, merge PDF notes, and watermark test papers.</p>
+          <span class="academic-tool-link">Open Converter <i class="bi bi-arrow-up-right"></i></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FEATURED TEACHING JOBS
+       ============================================================ -->
+  <section class="py-5 bg-white border-top border-bottom">
+    <div class="container">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+          <span class="converter-badge-new mb-1">Featured Roles</span>
+          <h2 class="fw-bold mb-1" style="font-size: 1.85rem;">Active Teaching Opportunities</h2>
+          <p class="text-muted mb-0">Latest verified BOM and tutoring positions</p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'bom_jobs' %}" class="btn btn-outline-primary rounded-pill px-3 py-1 btn-sm">BOM Jobs</a>
+          <a href="{% url 'homeschooling_jobs' %}" class="btn btn-outline-secondary rounded-pill px-3 py-1 btn-sm">Homeschooling Jobs</a>
+        </div>
+      </div>
+
+      <div class="jobs-listing-grid-new">
+        {% for job in featured_jobs|slice:":3" %}
+        <div class="job-listing-card-new">
+          <div class="job-listing-header-new">
+            <span class="job-listing-type-new">
+              {% if job.job_type == 'bom' %}BOM Teaching{% else %}Homeschooling{% endif %}
+            </span>
+            <span class="job-listing-location-new">
+              <i class="bi bi-geo-alt-fill text-danger"></i> {{ job.location }}
+            </span>
+          </div>
+          <h3 class="job-listing-title-new">{{ job.title }}</h3>
+          <p class="job-listing-school-new">{{ job.school_name }}</p>
+          <div class="small text-muted mb-3 flex-grow-1">
+            {{ job.description|truncatewords:20 }}
+          </div>
+          <div class="job-listing-footer-new">
+            <span class="job-listing-salary-new">{{ job.salary_range|default:"Competitive" }}</span>
+            <a href="{% if job.job_type == 'bom' %}{% url 'bom_jobs' %}{% else %}{% url 'homeschooling_jobs' %}{% endif %}" class="job-listing-apply-new">
+              Details <i class="bi bi-arrow-right-short"></i>
+            </a>
+          </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5 bg-light rounded-3 border">
+          <i class="bi bi-briefcase fs-1 text-muted mb-2 d-block"></i>
+          <h5 class="fw-bold text-dark">No Active Job Postings Listed Yet</h5>
+          <p class="text-muted small">Are you a school looking for teachers? Post your opening now.</p>
+          <a href="{% url 'post_job' %}" class="btn btn-primary rounded-pill px-4">Post a Job Opening</a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       CTA FOR SCHOOLS AND TEACHERS
+       ============================================================ -->
+  <section class="py-5">
+    <div class="container text-center py-4">
+      <div class="p-5 bg-white rounded-4 border shadow-sm max-w-700 mx-auto">
+        <span class="badge bg-primary-subtle text-primary fw-bold text-uppercase px-3 py-2 rounded-pill mb-3">Join CoreSynch Education</span>
+        <h2 class="display-6 fw-bold mb-3">Empower Your School &amp; Classroom</h2>
+        <p class="text-muted lead mb-4">Register your school for full-term curriculum access or sign up as an individual educator today.</p>
+        <div class="d-flex justify-content-center flex-wrap gap-3">
+          {% if user.is_authenticated %}
+          <a href="{% url 'user_dashboard' %}" class="btn-saas-primary">
+            <i class="bi bi-speedometer2"></i> Access Dashboard
+          </a>
+          {% else %}
+          <a href="{% url 'school_register' %}" class="btn-saas-primary">
+            <i class="bi bi-building-add"></i> Register a School
+          </a>
+          <a href="{% url 'user_register' %}" class="btn-saas-secondary">
+            <i class="bi bi-person"></i> Register as Teacher / Student
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
