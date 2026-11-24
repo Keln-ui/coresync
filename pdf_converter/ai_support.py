@@ -223,6 +223,9 @@ def generate_ai_response(prompt, history=None):
             'Gemini could not find the configured model. Check GEMINI_MODEL; '
             'the default is gemini-3.5-flash-lite.'
         )
+    if response.status_code in {500, 502, 503, 504}:
+        logger.warning('Gemini is temporarily unavailable (HTTP %s).', response.status_code)
+        raise AIServiceError('Gemini is temporarily unavailable. Please try again in a few minutes.')
     if response.status_code >= 400:
         logger.warning('Gemini API returned HTTP %s.', response.status_code)
         raise AIServiceError('Gemini could not complete this request. Check the API configuration and try again.')

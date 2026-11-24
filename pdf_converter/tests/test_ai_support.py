@@ -7,8 +7,10 @@ from django.urls import reverse
 from docx import Document
 from pdf_converter.views import ai_assistant
 from pdf_converter.ai_support import (
+    AIServiceError,
     MAX_SYLLABUS_PAGES,
     extract_document_text,
+    generate_ai_response,
     get_kicd_syllabus_context,
 )
 from revision.models import Class, Subject
@@ -316,6 +318,39 @@ class AIAssistantTests(TestCase):
         self.assertIn('Total marks: 10', sent_prompt)
         self.assertEqual(get_syllabus.call_args.args, ('Grade 10', 'Applied Agriculture'))
 
+    @patch(
+        'pdf_converter.views.get_kicd_syllabus_context',
+        return_value=('Official agriculture syllabus content.', 'Applied Agriculture — Grade 10, CBC, 2026'),
+    )
+    @patch('pdf_converter.ai_support.requests.post')
+    def test_exam_builder_accepts_topic_wording_variations_and_reports_unmatched_topics(
+        self, post, get_syllabus
+    ):
+        gemini_response = Mock(status_code=200)
+        gemini_response.json.return_value = {
+            'candidates': [{'content': {'parts': [{
+                'text': 'TOPIC NOT FOUND: No matching topic. Closest syllabus topic: soil conservation.'
+            }]}}]
+        }
+        post.return_value = gemini_response
+
+        response = self.client.post(reverse('ai_assistant_generate'), {
+            'mode': 'exam',
+            'exam_class_name': 'Grade 10',
+            'exam_subject': 'Applied Agriculture',
+            'exam_topics': 'ungrammatical topic request',
+            'exam_difficulty': 'mixed',
+            'exam_marks': '10',
+            'exam_duration': '30',
+        })
+
+        self.assertEqual(response.status_code, 422)
+        self.assertIn('Closest syllabus topic: soil conservation.', response.json()['error'])
+        sent_prompt = post.call_args.kwargs['json']['contents'][0]['parts'][0]['text']
+        self.assertIn('Do not require an exact wording match', sent_prompt)
+        self.assertIn('correct obvious spelling or grammar errors', sent_prompt)
+        get_syllabus.assert_called_once_with('Grade 10', 'Applied Agriculture')
+
     @patch('pdf_converter.ai_support.requests.post')
     def test_exam_builder_validates_mark_limit(self, post):
         response = self.client.post(reverse('ai_assistant_generate'), {
@@ -342,6 +377,16 @@ class AIAssistantTests(TestCase):
 
         self.assertEqual(response.status_code, 503)
         self.assertIn('gemini-3.5-flash-lite', response.json()['error'])
+
+    @patch('pdf_converter.ai_support.requests.post')
+    def test_gemini_service_unavailable_returns_temporary_outage_message(self, post):
+        post.return_value = Mock(status_code=503)
+
+        with self.assertRaises(AIServiceError) as error:
+            generate_ai_response('Hello')
+
+        self.assertIn('temporarily unavailable', str(error.exception))
+        self.assertIn('try again in a few minutes', str(error.exception))
 
 
 @override_settings(GEMINI_API_KEY='')

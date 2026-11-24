@@ -210,6 +210,10 @@ def ai_assistant_generate(request):
             'Use only syllabus content relevant to the requested topics. Do not invent curriculum facts or '
             'claim unsupported alignment. Make the total marks add up exactly to the requested total, and '
             'ensure the marking scheme answers every question with allocated marks that add up consistently. '
+            'Do not require an exact wording match: correct obvious spelling or grammar errors and match '
+            'clear paraphrases to the closest syllabus terminology. If a requested topic cannot be confidently '
+            'matched to any topic in the syllabus, do not generate an exam; respond only with '
+            '"TOPIC NOT FOUND: " followed by a brief explanation and the closest syllabus topic names, if any. '
             'Return plain text only, using exactly these section headings on their own lines:\n'
             'EXAM PAPER\n'
             '[numbered questions, sections and marks]\n'
@@ -231,6 +235,8 @@ def ai_assistant_generate(request):
     except AIServiceError as exc:
         return JsonResponse({'error': str(exc)}, status=503)
     if mode == 'exam':
+        if answer.startswith('TOPIC NOT FOUND:'):
+            return JsonResponse({'error': answer}, status=422)
         answer_parts = answer.split('ANSWER KEY AND MARKING SCHEME', 1)
         if len(answer_parts) != 2 or 'EXAM PAPER' not in answer_parts[0]:
             return JsonResponse({
