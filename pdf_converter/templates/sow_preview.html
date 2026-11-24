@@ -15,6 +15,7 @@
     .sow-preview .preview-item:last-child{border-bottom:0}
     .sow-preview .preview-item small{display:block;color:var(--preview-muted);font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
     .sow-preview .preview-item strong{display:block;margin-top:.2rem;color:var(--preview-ink)}
+    .sow-preview .preview-item-centered{text-align:center}
     @media(max-width:767.98px){.sow-preview .preview-editor{min-height:360px}}
 </style>
 {% endblock %}
@@ -59,11 +60,11 @@
                         <aside class="col-lg-4">
                             <div class="preview-meta">
                                 <div class="fw-bold mb-2">Scheme details</div>
-                                <div class="preview-item"><small>Institution</small><strong>{{ school_name }}</strong></div>
-                                <div class="preview-item"><small>Class / Grade</small><strong>{{ class_name }}</strong></div>
-                                <div class="preview-item"><small>Subject</small><strong>{{ subject_name }}</strong></div>
-                                <div class="preview-item"><small>Term &amp; year</small><strong>{{ term }} · {{ academic_year }}</strong></div>
-                                <div class="preview-item"><small>Duration</small><strong>{{ weeks_count }} teaching weeks</strong></div>
+                                <div class="preview-item preview-item-centered"><small>Institution</small><strong>{{ school_name }}</strong></div>
+                                <div class="preview-item preview-item-centered"><small>Class / Grade</small><strong>{{ class_name }}</strong></div>
+                                <div class="preview-item preview-item-centered"><small>Subject</small><strong>{{ subject_name }}</strong></div>
+                                <div class="preview-item preview-item-centered"><small>Term &amp; year</small><strong>{{ term }} · {{ academic_year }}</strong></div>
+                                <div class="preview-item preview-item-centered"><small>Duration</small><strong>{{ weeks_count }} teaching weeks</strong></div>
                                 <div class="small text-muted mt-3"><i class="bi bi-info-circle me-1"></i>These details will be printed at the start of the Word document.</div>
                             </div>
                         </aside>

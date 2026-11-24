@@ -372,6 +372,7 @@ def build_scheme_of_work_docx(
             _set_cell_margins(cell, top=95, bottom=95, left=130, right=130)
             cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
             p = cell.paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             p.paragraph_format.space_after = Pt(0)
             p.paragraph_format.space_before = Pt(0)
             label_run = p.add_run(f"{label}\n")
