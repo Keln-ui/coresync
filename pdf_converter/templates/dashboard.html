@@ -3,7 +3,7 @@
 {% block title %}Dashboard — CoreSynch{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container dashboard-page py-4">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
@@ -19,7 +19,7 @@
             <p class="text-muted mb-0">Welcome back, <strong>{{ user.username }}</strong>! Here is an overview of your activity and document usage.</p>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
+        <div class="dashboard-page-actions d-flex align-items-center gap-2">
             <a href="{% url 'index' %}" class="btn btn-primary rounded-pill px-3 py-2">
                 <i class="bi bi-cloud-arrow-up-fill me-1"></i> New Conversion
             </a>
@@ -30,7 +30,7 @@
     </div>
 
     <!-- KPI Metric Cards -->
-    <div class="row g-3 mb-4">
+    <div class="row dashboard-metrics g-3 mb-4">
         <!-- Conversions Metric -->
         <div class="col-xl-3 col-md-6">
             <div class="dashboard-stat-card">
