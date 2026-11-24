@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -8,8 +8,20 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 import os
 import logging
-from .models import Class, Subject, RevisionMaterial, SchemeOfWork, SchemeWeekProgress
-from .forms import SchemeOfWorkGeneratorForm
+from .models import (
+    Class,
+    Curriculum,
+    RevisionMaterial,
+    SchemeOfWork,
+    SchemeWeekProgress,
+    Subject,
+)
+from .forms import (
+    CurriculumUploadForm,
+    RevisionMaterialUploadForm,
+    SchemeOfWorkGeneratorForm,
+    SchemeOfWorkUploadForm,
+)
 from pdf_converter.views import revision_access_required
 from pdf_converter.payment_utils import payment_required_for_revision, get_revision_material_price
 from django.urls import reverse
@@ -17,6 +29,67 @@ from urllib.parse import urlencode
 from pdf_converter.models import SchoolProfile
 
 logger = logging.getLogger(__name__)
+
+STAFF_UPLOAD_FORMS = {
+    'resource': (RevisionMaterialUploadForm, 'Learning resource'),
+    'scheme': (SchemeOfWorkUploadForm, 'Scheme of Work'),
+    'curriculum': (CurriculumUploadForm, 'Curriculum source'),
+}
+
+
+@user_passes_test(lambda user: user.is_authenticated and user.is_staff)
+def staff_resource_dashboard(request):
+    """Provide staff with a central place to upload and manage learning resources."""
+    from django.db.models import Sum
+
+    return render(request, 'revision/staff_resource_dashboard.html', {
+        'total_materials': RevisionMaterial.objects.count(),
+        'total_downloads': RevisionMaterial.objects.aggregate(
+            total=Sum('download_count')
+        )['total'] or 0,
+        'total_schemes': SchemeOfWork.objects.count(),
+        'total_curricula': Curriculum.objects.count(),
+        'recent_materials': RevisionMaterial.objects.select_related(
+            'subject', 'subject__class_ref'
+        )[:6],
+        'recent_schemes': SchemeOfWork.objects.select_related(
+            'class_ref', 'subject'
+        )[:4],
+    })
+
+
+@user_passes_test(lambda user: user.is_authenticated and user.is_staff)
+def staff_upload_resource(request, upload_type):
+    """Upload a revision resource, scheme of work, or curriculum source."""
+    form_config = STAFF_UPLOAD_FORMS.get(upload_type)
+    if form_config is None:
+        raise Http404('Unknown resource type.')
+
+    form_class, label = form_config
+    initial = {}
+    if request.method == 'GET' and upload_type == 'resource':
+        material_type = request.GET.get('type', '')
+        valid_types = {value for value, _ in RevisionMaterial.MATERIAL_TYPES}
+        if material_type in valid_types:
+            initial['material_type'] = material_type
+
+    form = form_class(
+        request.POST if request.method == 'POST' else None,
+        request.FILES or None,
+        initial=initial,
+    )
+    if request.method == 'POST' and form.is_valid():
+        item = form.save()
+        messages.success(request, f'{label} uploaded successfully.')
+        if upload_type == 'resource':
+            return redirect('material_detail', material_id=item.id)
+        return redirect('staff_resource_dashboard')
+
+    return render(request, 'revision/staff_resource_upload.html', {
+        'form': form,
+        'upload_type': upload_type,
+        'label': label,
+    })
 
 
 def revision_home(request):

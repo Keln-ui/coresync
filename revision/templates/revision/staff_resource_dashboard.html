@@ -1,0 +1,95 @@
+{% extends 'revision/base_revision.html' %}
+
+{% block title %}Upload Resources — CoreSynch{% endblock %}
+{% block subtitle %}Upload Resources{% endblock %}
+
+{% block extra_head %}
+<style>
+    .resource-hub{--hub-ink:#17243d;--hub-muted:#738098;--hub-line:#e6ebf2;color:var(--hub-ink)}
+    .resource-hub .hub-hero{padding:1.75rem 2rem;border-radius:22px;color:#fff;background:linear-gradient(120deg,#14213d,#29477e 65%,#3157d5)}
+    .resource-hub .hub-card{height:100%;padding:1.2rem;background:#fff;border:1px solid var(--hub-line);border-radius:18px;box-shadow:0 10px 28px rgba(28,45,75,.045)}
+    .resource-hub .hub-action{display:flex;align-items:flex-start;gap:.85rem;height:100%;padding:1rem;border:1px solid var(--hub-line);border-radius:16px;color:inherit;text-decoration:none;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+    .resource-hub .hub-action:hover{transform:translateY(-2px);border-color:#b9c9f5;box-shadow:0 12px 25px rgba(36,65,123,.08);color:inherit}
+    .resource-hub .hub-icon{flex:0 0 42px;width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#edf2ff;color:#3157d5;font-size:1.2rem}
+    .resource-hub .hub-action strong{display:block;font-size:.88rem}
+    .resource-hub .hub-action small{display:block;margin-top:.25rem;color:var(--hub-muted);font-size:.75rem;line-height:1.45}
+    .resource-hub .hub-metric{font-size:1.5rem;font-weight:850}
+    .resource-hub .hub-muted{color:var(--hub-muted);font-size:.8rem}
+    .resource-hub .hub-row{padding:.75rem 0;border-bottom:1px solid #eef1f6}
+    .resource-hub .hub-row:last-child{border-bottom:0}
+</style>
+{% endblock %}
+
+{% block heading %}
+    <span><i class="bi bi-cloud-arrow-up" style="color: var(--primary);"></i> Upload Resources</span>
+{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active" style="color: var(--gray-400);">Upload Resources</li>
+{% endblock %}
+
+{% block content_body %}
+<div class="resource-hub">
+    <section class="hub-hero mb-4">
+        <div class="small text-white-50 text-uppercase fw-bold mb-1" style="letter-spacing:.12em;">Staff resource center</div>
+        <h1 class="h2 fw-bold mb-2">Manage CoreSync learning resources</h1>
+        <p class="text-white-50 mb-0">Upload materials for the revision library, publish schemes of work, or add curriculum sources.</p>
+    </section>
+
+    <section class="row g-3 mb-4" aria-label="Resource counts">
+        <div class="col-6 col-lg-3"><div class="hub-card"><div class="hub-muted">Learning resources</div><div class="hub-metric">{{ total_materials }}</div></div></div>
+        <div class="col-6 col-lg-3"><div class="hub-card"><div class="hub-muted">Downloads</div><div class="hub-metric">{{ total_downloads }}</div></div></div>
+        <div class="col-6 col-lg-3"><div class="hub-card"><div class="hub-muted">Schemes of work</div><div class="hub-metric">{{ total_schemes }}</div></div></div>
+        <div class="col-6 col-lg-3"><div class="hub-card"><div class="hub-muted">Curriculum sources</div><div class="hub-metric">{{ total_curricula }}</div></div></div>
+    </section>
+
+    <section class="mb-4">
+        <div class="d-flex align-items-end justify-content-between mb-3">
+            <div><h2 class="h5 fw-bold mb-1">Upload content</h2><p class="hub-muted mb-0">Choose a resource type to open its upload form.</p></div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6 col-xl-4"><a class="hub-action" href="{% url 'staff_upload_resource' 'resource' %}?type=notes"><span class="hub-icon"><i class="bi bi-journal-text"></i></span><span><strong>Upload Notes</strong><small>Add class notes and learning handouts to the revision library.</small></span></a></div>
+            <div class="col-md-6 col-xl-4"><a class="hub-action" href="{% url 'staff_upload_resource' 'resource' %}?type=past_paper"><span class="hub-icon"><i class="bi bi-file-earmark-richtext"></i></span><span><strong>Upload Exams</strong><small>Publish past papers and exam resources for learners.</small></span></a></div>
+            <div class="col-md-6 col-xl-4"><a class="hub-action" href="{% url 'staff_upload_resource' 'resource' %}?type=textbook"><span class="hub-icon"><i class="bi bi-book"></i></span><span><strong>Upload CBC Books</strong><small>Add textbooks and CBC book resources to the library.</small></span></a></div>
+            <div class="col-md-6 col-xl-4"><a class="hub-action" href="{% url 'staff_upload_resource' 'resource' %}?type=marking_scheme"><span class="hub-icon"><i class="bi bi-check2-square"></i></span><span><strong>Upload Marking Schemes</strong><small>Share answer keys and assessment marking guides.</small></span></a></div>
+            <div class="col-md-6 col-xl-4"><a class="hub-action" href="{% url 'staff_upload_resource' 'scheme' %}"><span class="hub-icon"><i class="bi bi-calendar2-range"></i></span><span><strong>Upload Scheme of Work</strong><small>Publish a downloadable Word scheme for a class and term.</small></span></a></div>
+            <div class="col-md-6 col-xl-4"><a class="hub-action" href="{% url 'staff_upload_resource' 'curriculum' %}"><span class="hub-icon"><i class="bi bi-patch-check"></i></span><span><strong>Upload CBC Curriculum</strong><small>Add an official curriculum source linked to its class and subject.</small></span></a></div>
+        </div>
+    </section>
+
+    <section class="row g-3">
+        <div class="col-lg-6">
+            <div class="hub-card">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                    <div><h2 class="h6 fw-bold mb-1">Recent learning resources</h2><p class="hub-muted mb-0">Notes, exams, books, and marking schemes.</p></div>
+                    <a class="btn btn-sm btn-outline-primary rounded-pill" href="{% url 'admin:revision_revisionmaterial_changelist' %}">Manage all</a>
+                </div>
+                {% for material in recent_materials %}
+                <div class="hub-row d-flex justify-content-between align-items-center gap-3">
+                    <div><strong class="small">{{ material.title }}</strong><div class="hub-muted mt-1">{{ material.subject.name }}{% if material.subject.class_ref %} · {{ material.subject.class_ref.name }}{% endif %}</div></div>
+                    <span class="badge rounded-pill text-bg-light">{{ material.get_material_type_display }}</span>
+                </div>
+                {% empty %}
+                <p class="hub-muted text-center my-4">No learning resources uploaded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="hub-card">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                    <div><h2 class="h6 fw-bold mb-1">Recent schemes of work</h2><p class="hub-muted mb-0">Published downloadable teaching plans.</p></div>
+                    <a class="btn btn-sm btn-outline-primary rounded-pill" href="{% url 'admin:revision_schemeofwork_changelist' %}">Manage all</a>
+                </div>
+                {% for scheme in recent_schemes %}
+                <div class="hub-row d-flex justify-content-between align-items-center gap-3">
+                    <div><strong class="small">{{ scheme.title }}</strong><div class="hub-muted mt-1">{{ scheme.class_ref.name }} · {{ scheme.subject.name }} · {{ scheme.get_term_display }}</div></div>
+                    <span class="badge rounded-pill text-bg-light">{{ scheme.academic_year }}</span>
+                </div>
+                {% empty %}
+                <p class="hub-muted text-center my-4">No schemes of work uploaded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

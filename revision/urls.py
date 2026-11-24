@@ -3,6 +3,8 @@ from . import views
 
 urlpatterns = [
     path('', views.revision_home, name='revision_home'),
+    path('staff/resources/', views.staff_resource_dashboard, name='staff_resource_dashboard'),
+    path('staff/resources/upload/<str:upload_type>/', views.staff_upload_resource, name='staff_upload_resource'),
     path('browse/', views.browse_materials, name='browse_materials'),
     path('browse-subjects/', views.browse_by_subject, name='browse_by_subject'),
     path('class/<int:class_id>/', views.class_subjects, name='class_subjects'),

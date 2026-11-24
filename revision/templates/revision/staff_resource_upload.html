@@ -1,0 +1,60 @@
+{% extends 'revision/base_revision.html' %}
+
+{% block title %}Upload {{ label }} — CoreSynch{% endblock %}
+{% block subtitle %}Upload {{ label }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .resource-upload{max-width:900px;margin:0 auto}
+    .resource-upload .upload-panel{padding:clamp(1.2rem,4vw,2.5rem);background:#fff;border:1px solid #e6ebf2;border-radius:22px;box-shadow:0 15px 40px rgba(20,37,67,.07)}
+    .resource-upload .form-control,.resource-upload .form-select{border-radius:12px;padding:.7rem .85rem}
+    .resource-upload .upload-label{font-size:.78rem;color:#485770;font-weight:750}
+    .resource-upload .form-check{padding:.75rem 1rem .75rem 2.5rem;background:#f7f9fc;border:1px solid #e3eaf3;border-radius:12px}
+</style>
+{% endblock %}
+
+{% block heading %}
+    <span><i class="bi bi-cloud-arrow-up" style="color: var(--primary);"></i> Upload {{ label }}</span>
+{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'staff_resource_dashboard' %}" class="text-decoration-none">Upload Resources</a></li>
+    <li class="breadcrumb-item active" style="color: var(--gray-400);">{{ label }}</li>
+{% endblock %}
+
+{% block content_body %}
+<div class="resource-upload">
+    <form method="post" enctype="multipart/form-data" class="upload-panel">
+        {% csrf_token %}
+        <div class="mb-4">
+            <h1 class="h4 fw-bold mb-1">{{ label }}</h1>
+            <p class="text-muted small mb-0">Complete the details and choose the file to publish.</p>
+        </div>
+
+        {% for field in form %}
+        {% if field.field.widget.input_type == 'checkbox' %}
+        <div class="mb-3">
+            <div class="form-check">
+                {{ field }}
+                <label class="form-check-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            </div>
+            {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+        </div>
+        {% else %}
+        <div class="mb-3">
+            <label class="form-label upload-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+
+        <div class="d-flex justify-content-between gap-2 mt-4">
+            <a href="{% url 'staff_resource_dashboard' %}" class="btn btn-light rounded-pill px-4">Cancel</a>
+            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold"><i class="bi bi-upload me-2"></i>Upload</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
