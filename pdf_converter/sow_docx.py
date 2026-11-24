@@ -352,20 +352,20 @@ def build_scheme_of_work_docx(
     
     meta_data = [
         [
-            f"CLASS / GRADE: {class_name or 'N/A'}",
-            f"SUBJECT: {subject_name or 'N/A'}",
-            f"TERM: {term}",
-            f"YEAR: {academic_year or '2025'}"
+            ("CLASS / GRADE", class_name or "N/A"),
+            ("SUBJECT", subject_name or "N/A"),
+            ("TERM", term or "N/A"),
+            ("YEAR", academic_year or "2025"),
         ],
         [
-            f"WEEKS: {weeks_count}",
-            "TEACHER: ____________________",
-            "TSC NO: ________________",
-            "SIGN: _________________"
+            ("WEEKS", str(weeks_count)),
+            ("TEACHER", "____________________"),
+            ("TSC NO", "________________"),
+            ("SIGN", "_________________"),
         ]
     ]
     for r_idx, row_items in enumerate(meta_data):
-        for c_idx, text in enumerate(row_items):
+        for c_idx, (label, value) in enumerate(row_items):
             cell = meta_table.cell(r_idx, c_idx)
             _set_cell_background(cell, "EAF0FA" if r_idx == 0 else "F7F9FC")
             _set_cell_margins(cell, top=95, bottom=95, left=130, right=130)
@@ -373,14 +373,19 @@ def build_scheme_of_work_docx(
             p = cell.paragraphs[0]
             p.paragraph_format.space_after = Pt(0)
             p.paragraph_format.space_before = Pt(0)
-            r = p.add_run(text)
-            r.font.size = Pt(8.5)
-            r.font.bold = True
-            r.font.color.rgb = RGBColor(31, 52, 83)
+            label_run = p.add_run(f"{label}\n")
+            label_run.font.size = Pt(7)
+            label_run.font.bold = True
+            label_run.font.color.rgb = RGBColor(92, 107, 128)
+            value_run = p.add_run(value)
+            value_run.font.size = Pt(9)
+            value_run.font.bold = True
+            value_run.font.color.rgb = RGBColor(31, 52, 83)
     
     p_space = doc.add_paragraph()
     p_space.paragraph_format.space_before = Pt(2)
     p_space.paragraph_format.space_after = Pt(2)
+    doc.add_page_break()
 
     # Parse custom content into weekly breakdown
     parsed_weeks = []

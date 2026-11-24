@@ -15,10 +15,10 @@ class SchemeOfWorkDocumentTests(SimpleTestCase):
     def test_generated_document_has_branded_heading_and_repeating_weekly_table(self):
         output = build_scheme_of_work_docx(
             school_name='Muhu Senior School',
-            class_name='Grade 9',
-            subject_name='Mathematics',
+            class_name='Grade 10',
+            subject_name='Arabic',
             term='Term 1',
-            academic_year='2026',
+            academic_year='2027',
             weeks_count=2,
             custom_content='Week 1:\nNumbers\nWeek 2:\nAlgebra',
         )
@@ -26,7 +26,21 @@ class SchemeOfWorkDocumentTests(SimpleTestCase):
         document = Document(output)
 
         self.assertIn('MUHU SENIOR SCHOOL', document.tables[0].cell(0, 0).text)
-        self.assertIn('SCHEME OF WORK', document.tables[0].cell(0, 0).text)
+        self.assertIn('SCHEME OF WORK  /  TERM 1 2027', document.tables[0].cell(0, 0).text)
+        metadata = document.tables[1]
+        self.assertIn('CLASS / GRADE\nGrade 10', metadata.cell(0, 0).text)
+        self.assertIn('SUBJECT\nArabic', metadata.cell(0, 1).text)
+        self.assertIn('TERM\nTerm 1', metadata.cell(0, 2).text)
+        self.assertIn('YEAR\n2027', metadata.cell(0, 3).text)
+        body_elements = list(document._body._element)
+        schedule_index = body_elements.index(document.tables[-1]._tbl)
+        page_break_indexes = [
+            index for index, element in enumerate(body_elements)
+            if element.xpath('.//w:br[@w:type="page"]')
+        ]
+        self.assertEqual(len(page_break_indexes), 1)
+        self.assertLess(body_elements.index(metadata._tbl), page_break_indexes[0])
+        self.assertLess(page_break_indexes[0], schedule_index)
         self.assertEqual(len(document.tables[-1].rows), 3)
         self.assertEqual(
             document.tables[-1].rows[0]._tr.trPr.find(
