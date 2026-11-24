@@ -1,4 +1,21 @@
-# Python
+# Django production files
+*.sqlite3
+db.sqlite3
+staticfiles/
+tmp/
+
+# Environment backups
+.env.*
+!.env.example
+
+# Python cache
+__pycache__/
+
+# Passenger/server
+passenger_wsgi.py
+
+# Large files
+revise# Python
 __pycache__/
 *.py[cod]
 *$py.class

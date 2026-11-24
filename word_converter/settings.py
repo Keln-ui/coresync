@@ -1,6 +1,10 @@
 """
 Django settings for word_converter project.
 """
+import os
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 
 from pathlib import Path
 import os
@@ -115,9 +119,8 @@ DATABASES = {
         'HOST': os.environ.get('MYSQL_HOST', '127.0.0.1'),
         'PORT': os.environ.get('MYSQL_PORT', '3306'),
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES', innodb_strict_mode=1",
-            'charset': 'utf8mb4',
-        },
+    'charset': 'utf8mb4',
+},
     }
 }
 
@@ -256,21 +259,18 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Email Configuration — Gmail SMTP
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-EMAIL_HOST_USER = os.environ.get(
-    "EMAIL_HOST_USER",
-    "jomokelvin1143@gmail.com"
-)
-EMAIL_HOST_PASSWORD = os.environ.get(
-    "EMAIL_HOST_PASSWORD",
-    ""
-)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = os.environ.get("EMAIL_HOST")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 465))
+
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL") == "True"
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS") == "True"
+
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+
 DEFAULT_FROM_EMAIL = os.environ.get(
     "DEFAULT_FROM_EMAIL",
-    "CoreSynch <jomokelvin1143@gmail.com>"
+    EMAIL_HOST_USER
 )
-EMAIL_TIMEOUT = 30
