@@ -1,0 +1,44 @@
+{% extends 'revision/base_revision.html' %}
+
+{% block title %}Bulk ZIP Upload — CoreSynch{% endblock %}
+{% block subtitle %}Bulk ZIP Upload{% endblock %}
+
+{% block heading %}
+    <span><i class="bi bi-file-earmark-zip" style="color: var(--primary);"></i> Bulk ZIP Upload</span>
+{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'staff_resource_dashboard' %}" class="text-decoration-none">Upload Resources</a></li>
+    <li class="breadcrumb-item active" style="color: var(--gray-400);">Bulk ZIP Upload</li>
+{% endblock %}
+
+{% block content_body %}
+<div class="mx-auto" style="max-width:900px">
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-lg-5">
+        <h1 class="h4 fw-bold">Upload many learning resources</h1>
+        <p class="text-muted">Create a ZIP containing a root-level <code>manifest.csv</code> and each resource file. Every resource must have a manifest row.</p>
+
+        <h2 class="h6 fw-bold mt-2">Manifest columns</h2>
+        <p class="small text-muted mb-2"><code>filename,title,subject_id,material_type,term</code> are required. <code>description,year,is_free,price</code> are optional. Subject IDs are shown in the Subjects section of Django Admin. Material types: <code>notes</code>, <code>past_paper</code>, <code>marking_scheme</code>, <code>syllabus</code>, <code>textbook</code>, <code>other</code>. Terms: <code>term1</code>, <code>term2</code>, <code>term3</code>, <code>all</code>.</p>
+        <pre class="small bg-light rounded-3 p-3 mb-4"><code>filename,title,subject_id,material_type,term,description,year,is_free,price
+files/science-notes.pdf,Science Notes,12,notes,term1,Grade 6 notes,2026,true,0
+files/science-paper.pdf,Science Past Paper,12,past_paper,term2,,2025,false,150</code></pre>
+        <p class="small text-muted">The ZIP may be up to 100 MB, with up to 1,000 resource files. Each resource is limited to 50 MB and the archive to 500 MB uncompressed. The upload is validated before any resources are saved.</p>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-semibold" for="{{ form.zip_file.id_for_label }}">{{ form.zip_file.label }}</label>
+                {{ form.zip_file }}
+                {% if form.zip_file.help_text %}<div class="form-text">{{ form.zip_file.help_text }}</div>{% endif %}
+                {% for error in form.zip_file.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+            {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+            <div class="d-flex justify-content-between gap-2 mt-4">
+                <a href="{% url 'staff_resource_dashboard' %}" class="btn btn-light rounded-pill px-4">Cancel</a>
+                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold"><i class="bi bi-upload me-2"></i>Upload resources</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

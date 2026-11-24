@@ -3,11 +3,15 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.core.files import File
+from django.db import transaction
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 import os
 import logging
+import zipfile
+from pathlib import PurePosixPath
 from .models import (
     Class,
     Curriculum,
@@ -17,6 +21,7 @@ from .models import (
     Subject,
 )
 from .forms import (
+    BulkRevisionMaterialUploadForm,
     CurriculumUploadForm,
     RevisionMaterialUploadForm,
     SchemeOfWorkGeneratorForm,
@@ -90,6 +95,51 @@ def staff_upload_resource(request, upload_type):
         'upload_type': upload_type,
         'label': label,
     })
+
+
+@user_passes_test(lambda user: user.is_authenticated and user.is_staff)
+def staff_bulk_upload_resources(request):
+    """Create revision materials from a validated ZIP archive and CSV manifest."""
+    form = BulkRevisionMaterialUploadForm(
+        request.POST if request.method == 'POST' else None,
+        request.FILES or None,
+    )
+    if request.method == 'POST' and form.is_valid():
+        uploaded_file = form.cleaned_data['zip_file']
+        resources = form.cleaned_data['resources']
+        saved_files = []
+        try:
+            with transaction.atomic():
+                with zipfile.ZipFile(uploaded_file) as archive:
+                    for resource in resources:
+                        material = RevisionMaterial(
+                            title=resource['title'],
+                            subject=resource['subject'],
+                            material_type=resource['material_type'],
+                            term=resource['term'],
+                            description=resource['description'],
+                            year=resource['year'],
+                            is_free=resource['is_free'],
+                            price=resource['price'],
+                        )
+                        with archive.open(resource['filename']) as source:
+                            material.file.save(
+                                PurePosixPath(resource['filename']).name,
+                                File(source),
+                                save=False,
+                            )
+                        saved_files.append(material.file.name)
+                        material.save()
+        except Exception:
+            for name in saved_files:
+                default_storage.delete(name)
+            logger.exception('Bulk revision resource upload failed.')
+            raise
+
+        messages.success(request, f'{len(resources)} resources uploaded successfully.')
+        return redirect('staff_resource_dashboard')
+
+    return render(request, 'revision/staff_resource_bulk_upload.html', {'form': form})
 
 
 def revision_home(request):

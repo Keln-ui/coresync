@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path('', views.revision_home, name='revision_home'),
     path('staff/resources/', views.staff_resource_dashboard, name='staff_resource_dashboard'),
+    path('staff/resources/bulk-upload/', views.staff_bulk_upload_resources, name='staff_bulk_upload_resources'),
     path('staff/resources/upload/<str:upload_type>/', views.staff_upload_resource, name='staff_upload_resource'),
     path('browse/', views.browse_materials, name='browse_materials'),
     path('browse-subjects/', views.browse_by_subject, name='browse_by_subject'),

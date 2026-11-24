@@ -9,6 +9,7 @@ A Django-based web application that converts various types of PDF files to Word 
 - Support for multiple PDF formats
 - Simple web interface for file upload and conversion
 - Download converted Word documents
+- Staff bulk upload of revision resources from ZIP archives with a CSV manifest
 
 ## Installation
 
