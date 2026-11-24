@@ -22,7 +22,7 @@ A Django-based web application that converts various types of PDF files to Word 
    - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
    - Add Tesseract to your system PATH
 
-4. For Word-to-PDF conversions that retain the document's page layout and styling, install LibreOffice and make `soffice` available on PATH. Without it, the built-in fallback converts text and tables but may not reproduce complex formatting exactly.
+4. Install LibreOffice on the application host and make `soffice` or `libreoffice` available on PATH. It is required for Word-to-PDF conversions to preserve the document's layout and styling; the application will report an error rather than return a reformatted PDF if LibreOffice is unavailable.
 
 5. Run migrations:
    ```

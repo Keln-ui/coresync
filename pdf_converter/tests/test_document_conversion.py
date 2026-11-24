@@ -1,12 +1,16 @@
 import io
 import os
+import subprocess
 import tempfile
+import textwrap
+from contextlib import contextmanager
 from unittest.mock import patch
 
 from docx import Document
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
+from pdf_converter.converters.docx_to_pdf_converter import DocxToPdfConverter
 from PIL import Image
 from PyPDF2 import PdfReader
 from reportlab.pdfgen import canvas
@@ -33,6 +37,48 @@ class DocumentConversionTests(TestCase):
         pdf.drawString(72, 710, 'This source content should remain editable in the Word document.')
         pdf.save()
         return output.getvalue()
+
+    @staticmethod
+    def fake_libreoffice(command, **kwargs):
+        output_dir = command[command.index('--outdir') + 1]
+        docx_path = command[-1]
+        document = Document(docx_path)
+        output_path = os.path.join(
+            output_dir,
+            os.path.splitext(os.path.basename(docx_path))[0] + '.pdf',
+        )
+        pdf = canvas.Canvas(output_path)
+        y = 770
+        lines = [paragraph.text for paragraph in document.paragraphs]
+        lines.extend(
+            cell.text
+            for table in document.tables
+            for row in table.rows
+            for cell in row.cells
+        )
+        for text in lines:
+            for line in textwrap.wrap(text, width=95) or ['']:
+                if y < 36:
+                    pdf.showPage()
+                    y = 770
+                pdf.drawString(36, y, line)
+                y -= 14
+        pdf.save()
+        return subprocess.CompletedProcess(command, 0, '', '')
+
+    @contextmanager
+    def mock_libreoffice(self):
+        with (
+            patch(
+                'pdf_converter.converters.docx_to_pdf_converter.shutil.which',
+                return_value='/usr/bin/soffice',
+            ),
+            patch(
+                'pdf_converter.converters.docx_to_pdf_converter.subprocess.run',
+                side_effect=self.fake_libreoffice,
+            ),
+        ):
+            yield
 
     def test_pdf_upload_returns_a_valid_editable_word_document(self):
         pdf_file = SimpleUploadedFile(
@@ -87,7 +133,7 @@ class DocumentConversionTests(TestCase):
             content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         )
 
-        with patch('pdf_converter.converters.docx_to_pdf_converter.shutil.which', return_value=None):
+        with self.mock_libreoffice():
             response = self.client.post(reverse('upload_docx_to_pdf'), {'docx_file': upload})
 
         self.assertEqual(response.status_code, 200, response.content)
@@ -117,7 +163,7 @@ class DocumentConversionTests(TestCase):
         source.save(docx_bytes)
         upload = SimpleUploadedFile('filename.docx', docx_bytes.getvalue())
 
-        with patch('pdf_converter.converters.docx_to_pdf_converter.shutil.which', return_value=None):
+        with self.mock_libreoffice():
             response = self.client.post(reverse('upload_docx_to_pdf'), {'docx_file': upload})
 
         self.assertEqual(response.status_code, 200, response.content)
@@ -163,7 +209,7 @@ class DocumentConversionTests(TestCase):
             content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         )
 
-        with patch('pdf_converter.converters.docx_to_pdf_converter.shutil.which', return_value=None):
+        with self.mock_libreoffice():
             response = self.client.post(reverse('upload_docx_to_pdf'), {'docx_file': upload})
 
         self.assertEqual(response.status_code, 200, response.content)
@@ -177,3 +223,17 @@ class DocumentConversionTests(TestCase):
         self.assertGreater(len(output.pages), 1)
         output_text = '\n'.join(page.extract_text() or '' for page in output.pages)
         self.assertIn('Symbols A & B should be preserved.', output_text)
+
+    def test_word_to_pdf_requires_libreoffice_to_preserve_original_layout(self):
+        source = Document()
+        source.add_paragraph('Layout must not be approximated.')
+        source_path = os.path.join(self.media_dir.name, 'source.docx')
+        output_path = os.path.join(self.media_dir.name, 'source.pdf')
+        source.save(source_path)
+        converter = DocxToPdfConverter(source_path, output_path)
+
+        with patch('pdf_converter.converters.docx_to_pdf_converter.shutil.which', return_value=None):
+            self.assertFalse(converter.convert())
+
+        self.assertIn('requires LibreOffice', converter.error_message)
+        self.assertFalse(os.path.exists(output_path))
