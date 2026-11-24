@@ -259,12 +259,13 @@ def personalize_uploaded_scheme_docx(
         value_run.font.size = Pt(9)
         value_run.font.color.rgb = RGBColor(31, 52, 83)
 
+    page_break = document.add_page_break()
     if not _apply_special_weeks_to_tables(document, special_weeks):
         events_table = _insert_special_weeks_table(document, special_weeks)
     else:
         events_table = None
     body = document._body._element
-    elements = [header._tbl, metadata._tbl]
+    elements = [header._tbl, metadata._tbl, page_break._p]
     if events_table:
         elements.append(events_table._tbl)
     for index, element in enumerate(elements):

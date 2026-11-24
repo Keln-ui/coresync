@@ -74,7 +74,18 @@ class SchemeOfWorkDocumentTests(SimpleTestCase):
         self.assertIn('2026', metadata.cell(0, 3).text)
         self.assertIn('Reporting week', document.tables[2].cell(1, 1).text)
         self.assertIn('Mid-break week', document.tables[2].cell(2, 1).text)
-        self.assertEqual(document.paragraphs[0].text, 'Existing scheme content')
+        body_elements = list(document._body._element)
+        metadata_index = body_elements.index(metadata._tbl)
+        page_break_index = next(
+            index for index, element in enumerate(body_elements)
+            if element.xpath('.//w:br[@w:type="page"]')
+        )
+        content_index = next(
+            index for index, element in enumerate(body_elements)
+            if element.xpath('.//w:t[text()="Existing scheme content"]')
+        )
+        self.assertLess(metadata_index, page_break_index)
+        self.assertLess(page_break_index, content_index)
 
     def test_selected_term_weeks_are_included_and_marked_in_generated_document(self):
         output = build_scheme_of_work_docx(
