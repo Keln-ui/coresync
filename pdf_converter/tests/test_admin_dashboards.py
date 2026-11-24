@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.urls import reverse
 
 from pdf_converter import admin_views
 
@@ -85,3 +86,5 @@ class AdminDashboardPageTests(TestCase):
         self.assertContains(response, 'No active KICD syllabus sources yet')
         self.assertContains(response, 'Add syllabus')
         self.assertContains(response, 'Scheme coverage')
+        self.assertContains(response, f'href="{reverse("staff_resource_dashboard")}"')
+        self.assertContains(response, 'Upload resources')

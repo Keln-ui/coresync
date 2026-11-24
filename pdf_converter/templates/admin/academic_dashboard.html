@@ -42,7 +42,8 @@
                     <h1 class="h2 mb-2">Welcome, {{ request.user.get_short_name|default:request.user.username }}</h1>
                     <p class="mb-3">A live control center for curriculum, learning resources, AI teaching tools, and job approvals.</p>
                     <div class="d-flex flex-wrap gap-2">
-                        <a class="btn btn-light rounded-pill px-3 py-2 btn-sm fw-semibold" href="{% url 'ai_assistant' %}"><i class="bi bi-stars me-1"></i> Open AI Assistant</a>
+                        <a class="btn btn-light rounded-pill px-3 py-2 btn-sm fw-semibold" href="{% url 'staff_resource_dashboard' %}"><i class="bi bi-cloud-arrow-up me-1"></i> Upload resources</a>
+                        <a class="btn btn-outline-light rounded-pill px-3 py-2 btn-sm" href="{% url 'ai_assistant' %}"><i class="bi bi-stars me-1"></i> Open AI Assistant</a>
                         <a class="btn btn-outline-light rounded-pill px-3 py-2 btn-sm" href="{% url 'academic_index' %}"><i class="bi bi-box-arrow-up-right me-1"></i> View academic site</a>
                     </div>
                 </div>
@@ -76,7 +77,6 @@
                 <a class="small fw-semibold text-decoration-none" href="{% url 'admin:index' %}">All admin tools <i class="bi bi-arrow-up-right"></i></a>
             </div>
             <div class="row g-3">
-                <div class="col-md-6 col-xl-3"><a class="aa-action" href="{% url 'staff_resource_dashboard' %}"><span class="aa-action-icon"><i class="bi bi-cloud-arrow-up"></i></span><span><strong>Upload resources</strong><small>Upload notes, exams, CBC books, marking schemes, schemes of work, and curriculum sources.</small></span></a></div>
                 <div class="col-md-6 col-xl-3"><a class="aa-action" href="{% url 'admin:revision_curriculum_changelist' %}"><span class="aa-action-icon"><i class="bi bi-patch-check"></i></span><span><strong>KICD curriculum sources</strong><small>Upload, activate, and manage class- and subject-matched syllabus files used by AI schemes and exams.</small></span></a></div>
                 <div class="col-md-6 col-xl-3"><a class="aa-action" href="{% url 'admin:revision_revisionmaterial_changelist' %}"><span class="aa-action-icon"><i class="bi bi-journal-plus"></i></span><span><strong>Revision library</strong><small>Publish notes, past papers, marking schemes, syllabuses, and other study resources.</small></span></a></div>
                 <div class="col-md-6 col-xl-3"><a class="aa-action" href="{% url 'admin:revision_schemeofwork_changelist' %}"><span class="aa-action-icon"><i class="bi bi-calendar2-range"></i></span><span><strong>Schemes of work</strong><small>Publish and manage downloadable teacher schemes.</small></span></a></div>
