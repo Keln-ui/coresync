@@ -49,16 +49,48 @@
                 </div>
 
                 <div id="schemeOptions" class="row g-3 mb-3 d-none">
-                    <div class="col-md-6"><label class="form-label fw-semibold" for="className">Class or grade</label><input class="form-control" id="className" name="class_name" maxlength="100" placeholder="e.g. Grade 8"></div>
-                    <div class="col-md-6"><label class="form-label fw-semibold" for="subject">Subject</label><input class="form-control" id="subject" name="subject" maxlength="100" placeholder="e.g. Integrated Science"></div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="className">Class or grade</label>
+                        <select class="form-select" id="className" name="class_name">
+                            <option value="">Choose a class</option>
+                            {% for class_ref in classes %}
+                            <option value="{{ class_ref.name }}">{{ class_ref.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="subject">Subject</label>
+                        <select class="form-select" id="subject" name="subject">
+                            <option value="">Choose a subject</option>
+                            {% for subject_name in subjects %}
+                            <option value="{{ subject_name }}">{{ subject_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <div class="col-md-6"><label class="form-label fw-semibold" for="term">Term</label><input class="form-control" id="term" name="term" maxlength="50" placeholder="e.g. Term 1"></div>
                     <div class="col-md-6"><label class="form-label fw-semibold" for="weeks">Weeks in term</label><input class="form-control" id="weeks" name="weeks" type="number" min="1" max="16" value="12"></div>
                     <div class="col-12 form-text">Schemes are drafted from an active official KICD syllabus uploaded for the selected class and subject. If no matching syllabus is available, the AI will not generate a generic substitute.</div>
                 </div>
 
                 <div id="examOptions" class="row g-3 mb-3 d-none">
-                    <div class="col-md-6"><label class="form-label fw-semibold" for="examClassName">Class or grade</label><input class="form-control" id="examClassName" name="exam_class_name" maxlength="100" placeholder="e.g. Grade 10"></div>
-                    <div class="col-md-6"><label class="form-label fw-semibold" for="examSubject">Subject</label><input class="form-control" id="examSubject" name="exam_subject" maxlength="100" placeholder="e.g. Applied Agriculture"></div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="examClassName">Class or grade</label>
+                        <select class="form-select" id="examClassName" name="exam_class_name">
+                            <option value="">Choose a class</option>
+                            {% for class_ref in classes %}
+                            <option value="{{ class_ref.name }}">{{ class_ref.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="examSubject">Subject</label>
+                        <select class="form-select" id="examSubject" name="exam_subject">
+                            <option value="">Choose a subject</option>
+                            {% for subject_name in subjects %}
+                            <option value="{{ subject_name }}">{{ subject_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <div class="col-12"><label class="form-label fw-semibold" for="examTopics">Topics to assess</label><textarea class="form-control" id="examTopics" name="exam_topics" rows="2" maxlength="1000" placeholder="e.g. Agricultural land, soil fertility, crop production"></textarea></div>
                     <div class="col-md-4"><label class="form-label fw-semibold" for="examDifficulty">Difficulty</label><select class="form-select" id="examDifficulty" name="exam_difficulty"><option value="mixed">Mixed</option><option value="basic">Basic</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></div>
                     <div class="col-md-4"><label class="form-label fw-semibold" for="examMarks">Total marks</label><input class="form-control" id="examMarks" name="exam_marks" type="number" min="10" max="200" value="50"></div>

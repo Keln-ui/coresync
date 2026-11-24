@@ -2,14 +2,16 @@ import io
 from unittest.mock import Mock, patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import SimpleTestCase, override_settings
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from docx import Document
+from pdf_converter.views import ai_assistant
 from pdf_converter.ai_support import (
     MAX_SYLLABUS_PAGES,
     extract_document_text,
     get_kicd_syllabus_context,
 )
+from revision.models import Class, Subject
 
 
 @override_settings(
@@ -17,7 +19,7 @@ from pdf_converter.ai_support import (
     GEMINI_MODEL='gemini-test',
     SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies',
 )
-class AIAssistantTests(SimpleTestCase):
+class AIAssistantTests(TestCase):
     def setUp(self):
         response = Mock()
         response.status_code = 200
@@ -35,6 +37,19 @@ class AIAssistantTests(SimpleTestCase):
         self.assertContains(response, 'Scheme drafts')
         self.assertContains(response, 'Exam builder')
         self.assertContains(response, 'General assistant')
+
+    @patch('pdf_converter.views.render')
+    def test_scheme_and_exam_class_and_subject_options_come_from_database(self, render_template):
+        class_ref = Class.objects.create(name='Grade 10', curriculum='cbe', level='secondary')
+        subject = Subject.objects.create(name='Applied Agriculture')
+        request = RequestFactory().get(reverse('ai_assistant'))
+        request.session = {}
+
+        ai_assistant(request)
+
+        context = render_template.call_args.args[2]
+        self.assertEqual(list(context['classes']), [class_ref])
+        self.assertEqual(list(context['subjects']), [subject.name])
 
     @patch('PyPDF2.PdfReader')
     def test_syllabus_extraction_allows_more_pages_than_user_documents(self, pdf_reader):

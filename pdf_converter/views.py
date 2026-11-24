@@ -47,9 +47,13 @@ from .ai_support import (
 
 def ai_assistant(request):
     chat_history = _get_ai_chat_history(request.session)
+    from revision.models import Class, Subject
+
     return render(request, 'ai_assistant.html', {
         'ai_configured': bool(getattr(settings, 'GEMINI_API_KEY', '')),
         'chat_history': chat_history,
+        'classes': Class.objects.order_by('curriculum', 'level', 'name'),
+        'subjects': Subject.objects.values_list('name', flat=True).order_by('name').distinct(),
     })
 
 
