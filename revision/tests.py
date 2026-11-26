@@ -1,9 +1,11 @@
 import csv
 import io
 import zipfile
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.http import HttpResponse
 from django.test import TestCase
 from django.urls import reverse
 
@@ -96,24 +98,102 @@ class StaffResourceUploadTests(TestCase):
                 'file': SimpleUploadedFile('science-scheme.docx', b'docx'),
             },
         )
-        self.assertRedirects(scheme_response, reverse('staff_resource_dashboard'))
+        self.assertEqual(scheme_response.status_code, 302)
+        self.assertEqual(scheme_response['Location'], reverse('staff_resource_dashboard'))
         scheme = SchemeOfWork.objects.get(title='Grade 6 Science Term 1')
         scheme.file.delete(save=False)
 
-        curriculum_response = self.client.post(
-            reverse('staff_upload_resource', args=['curriculum']),
-            {
-                'class_ref': self.class_ref.pk,
-                'subject': self.subject.pk,
-                'curriculum_type': 'cbc',
-                'academic_year': '2026',
-                'extracted_topics': '',
-                'is_active': 'on',
-                'file': SimpleUploadedFile('science-curriculum.pdf', b'pdf'),
-            },
+        with patch(
+            'revision.views.extract_document_text',
+            return_value='Science strand\nLiving things\nLearning outcomes',
+        ), patch(
+            'revision.views.render', return_value=HttpResponse('review')
+        ) as render_template:
+            curriculum_response = self.client.post(
+                reverse('staff_upload_resource', args=['curriculum']),
+                {
+                    'class_ref': self.class_ref.pk,
+                    'subject': self.subject.pk,
+                    'curriculum_type': 'cbc',
+                    'academic_year': '2026',
+                    'extracted_topics': '',
+                    'is_active': 'on',
+                    'file': SimpleUploadedFile('science-curriculum.pdf', b'pdf'),
+                },
+            )
+        self.assertEqual(curriculum_response.status_code, 200)
+        self.assertIn('Science strand', render_template.call_args.args[2]['review_text'])
+        self.assertEqual(
+            render_template.call_args.args[2]['review_form'].initial['extracted_topics'],
+            'Science strand\nLiving things\nLearning outcomes',
         )
-        self.assertRedirects(curriculum_response, reverse('staff_resource_dashboard'))
         curriculum = Curriculum.objects.get(subject=self.subject)
+        self.assertFalse(curriculum.is_active)
+        self.assertEqual(curriculum.extracted_topics, '')
+
+        with patch(
+            'revision.views.render', return_value=HttpResponse('dashboard')
+        ):
+            review_response = self.client.post(
+                reverse('staff_upload_resource', args=['curriculum']),
+                {
+                    'curriculum_review_action': 'confirm',
+                    'extracted_topics': 'Living things\nLearning outcomes',
+                    'activate': 'on',
+                },
+            )
+        self.assertEqual(review_response.status_code, 302)
+        self.assertEqual(review_response['Location'], reverse('staff_resource_dashboard'))
+        curriculum.refresh_from_db()
+        self.assertTrue(curriculum.is_active)
+        self.assertEqual(curriculum.extracted_topics, 'Living things\nLearning outcomes')
+        curriculum.file.delete(save=False)
+
+    @patch(
+        'revision.views.extract_document_text',
+        side_effect=ValueError('No readable text was found in the document.'),
+    )
+    def test_staff_cannot_activate_curriculum_without_readable_preview(self, extract_text):
+        with patch(
+            'revision.views.render', return_value=HttpResponse('review')
+        ) as render_template:
+            response = self.client.post(
+                reverse('staff_upload_resource', args=['curriculum']),
+                {
+                    'class_ref': self.class_ref.pk,
+                    'subject': self.subject.pk,
+                    'curriculum_type': 'cbc',
+                    'academic_year': '2026',
+                    'extracted_topics': '',
+                    'is_active': 'on',
+                    'file': SimpleUploadedFile('science-curriculum.pdf', b'pdf'),
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('No readable text', render_template.call_args.args[2]['review_error'])
+        curriculum = Curriculum.objects.get(subject=self.subject)
+        self.assertFalse(curriculum.is_active)
+
+        with patch(
+            'revision.views.render', return_value=HttpResponse('review')
+        ) as render_template:
+            review_response = self.client.post(
+                reverse('staff_upload_resource', args=['curriculum']),
+                {
+                    'curriculum_review_action': 'confirm',
+                    'extracted_topics': 'Living things',
+                    'activate': 'on',
+                },
+            )
+
+        self.assertEqual(review_response.status_code, 200)
+        self.assertIn(
+            'Upload a searchable document',
+            str(render_template.call_args.args[2]['review_form'].errors),
+        )
+        curriculum.refresh_from_db()
+        self.assertFalse(curriculum.is_active)
         curriculum.file.delete(save=False)
 
     def make_bulk_archive(self, rows, files):

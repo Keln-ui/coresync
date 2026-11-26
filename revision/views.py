@@ -22,12 +22,14 @@ from .models import (
 )
 from .forms import (
     BulkRevisionMaterialUploadForm,
+    CurriculumReviewForm,
     CurriculumUploadForm,
     RevisionMaterialUploadForm,
     SchemeOfWorkGeneratorForm,
     SchemeOfWorkUploadForm,
 )
 from pdf_converter.views import revision_access_required
+from pdf_converter.ai_support import MAX_SYLLABUS_PAGES, extract_document_text
 from pdf_converter.payment_utils import payment_required_for_revision, get_revision_material_price
 from django.urls import reverse
 from urllib.parse import urlencode
@@ -40,6 +42,71 @@ STAFF_UPLOAD_FORMS = {
     'scheme': (SchemeOfWorkUploadForm, 'Scheme of Work'),
     'curriculum': (CurriculumUploadForm, 'Curriculum source'),
 }
+
+CURRICULUM_REVIEW_SESSION_KEY = 'curriculum_upload_review'
+
+
+def _suggest_curriculum_topics(text):
+    topics = []
+    seen = set()
+    for line in text.splitlines():
+        topic = line.strip()
+        normalized = topic.casefold()
+        if len(topic) < 3 or len(topic) > 300 or normalized in seen:
+            continue
+        seen.add(normalized)
+        topics.append(topic)
+    return topics[:100], len(topics) > 100
+
+
+def _curriculum_review_response(request):
+    review = request.session.get(CURRICULUM_REVIEW_SESSION_KEY)
+    if not review:
+        messages.error(request, 'The curriculum review has expired. Upload the syllabus again.')
+        return redirect('staff_upload_resource', upload_type='curriculum')
+
+    curriculum = get_object_or_404(Curriculum, pk=review['curriculum_id'], is_active=False)
+    action = request.POST.get('curriculum_review_action')
+    if action == 'cancel':
+        curriculum.file.delete(save=False)
+        curriculum.delete()
+        del request.session[CURRICULUM_REVIEW_SESSION_KEY]
+        messages.info(request, 'The unreviewed curriculum upload was discarded.')
+        return redirect('staff_resource_dashboard')
+
+    form = CurriculumReviewForm(request.POST)
+    if form.is_valid():
+        activate = form.cleaned_data['activate']
+        topics = form.cleaned_data['extracted_topics'].strip()
+        if activate and not review.get('preview_text'):
+            form.add_error(
+                'activate',
+                'This syllabus could not be read. Upload a searchable document before activating it.',
+            )
+        elif activate and not topics:
+            form.add_error('extracted_topics', 'Add and review curriculum topics before activation.')
+        else:
+            curriculum.extracted_topics = topics
+            curriculum.is_active = activate
+            curriculum.save(update_fields=['extracted_topics', 'is_active'])
+            del request.session[CURRICULUM_REVIEW_SESSION_KEY]
+            if activate:
+                messages.success(request, 'Curriculum topics reviewed and syllabus activated.')
+            else:
+                messages.success(request, 'Curriculum topics saved. The syllabus remains inactive.')
+            return redirect('staff_resource_dashboard')
+
+    return render(request, 'revision/staff_resource_upload.html', {
+        'label': 'Curriculum source review',
+        'upload_type': 'curriculum',
+        'curriculum_review': True,
+        'curriculum': curriculum,
+        'review_form': form,
+        'review_text': review.get('preview_text', ''),
+        'review_error': review.get('preview_error', ''),
+        'review_truncated': review.get('preview_truncated', False),
+        'review_topic_limit_reached': review.get('topic_limit_reached', False),
+    })
 
 
 @user_passes_test(lambda user: user.is_authenticated and user.is_staff)
@@ -70,6 +137,13 @@ def staff_upload_resource(request, upload_type):
     if form_config is None:
         raise Http404('Unknown resource type.')
 
+    if (
+        upload_type == 'curriculum'
+        and request.method == 'POST'
+        and request.POST.get('curriculum_review_action')
+    ):
+        return _curriculum_review_response(request)
+
     form_class, label = form_config
     initial = {}
     if request.method == 'GET' and upload_type == 'resource':
@@ -84,6 +158,47 @@ def staff_upload_resource(request, upload_type):
         initial=initial,
     )
     if request.method == 'POST' and form.is_valid():
+        if upload_type == 'curriculum':
+            item = form.save(commit=False)
+            activate_requested = item.is_active
+            preview_text = ''
+            preview_error = ''
+            try:
+                item.file.seek(0)
+                preview_text = extract_document_text(item.file, max_pages=MAX_SYLLABUS_PAGES)
+            except ValueError as exc:
+                preview_error = str(exc)
+            item.file.seek(0)
+            suggested_topics, topic_limit_reached = _suggest_curriculum_topics(preview_text)
+            topic_text = form.cleaned_data['extracted_topics'].strip()
+            if not topic_text:
+                topic_text = '\n'.join(suggested_topics)
+            item.extracted_topics = ''
+            item.is_active = False
+            item.save()
+            preview_limit = 8000
+            request.session[CURRICULUM_REVIEW_SESSION_KEY] = {
+                'curriculum_id': item.pk,
+                'preview_text': preview_text[:preview_limit],
+                'preview_error': preview_error,
+                'preview_truncated': len(preview_text) > preview_limit,
+                'topic_limit_reached': topic_limit_reached,
+            }
+            return render(request, 'revision/staff_resource_upload.html', {
+                'label': 'Curriculum source review',
+                'upload_type': 'curriculum',
+                'curriculum_review': True,
+                'curriculum': item,
+                'review_form': CurriculumReviewForm(initial={
+                    'extracted_topics': topic_text,
+                    'activate': activate_requested,
+                }),
+                'review_text': preview_text[:preview_limit],
+                'review_error': preview_error,
+                'review_truncated': len(preview_text) > preview_limit,
+                'review_topic_limit_reached': topic_limit_reached,
+            })
+
         item = form.save()
         messages.success(request, f'{label} uploaded successfully.')
         if upload_type == 'resource':

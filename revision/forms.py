@@ -327,6 +327,14 @@ class CurriculumUploadForm(forms.ModelForm):
             'extracted_topics': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+        help_texts = {
+            'file': (
+                'Upload the official syllabus as PDF, DOCX, PPTX, XLSX, CSV, TXT, '
+                'or a scanned image. Scanned pages need Tesseract or Gemini OCR.'
+            ),
+            'extracted_topics': 'Topics are reviewed after the document is uploaded.',
+            'is_active': 'The syllabus is activated only after its extracted topics are reviewed.',
+        }
 
     def clean(self):
         cleaned_data = super().clean()
@@ -335,6 +343,22 @@ class CurriculumUploadForm(forms.ModelForm):
         if class_ref and subject and subject.class_ref_id != class_ref.id:
             self.add_error('subject', 'Choose a subject linked to the selected class.')
         return cleaned_data
+
+
+class CurriculumReviewForm(forms.Form):
+    extracted_topics = forms.CharField(
+        required=False,
+        max_length=40000,
+        label='Curriculum topics (one per line)',
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 10}),
+        help_text='Review, edit, and keep only the official topics used by scheme and exam tools.',
+    )
+    activate = forms.BooleanField(
+        required=False,
+        initial=True,
+        label='Activate this syllabus after review',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
 
 
 class SchemeOfWorkGeneratorForm(forms.Form):

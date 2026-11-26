@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.shortcuts import redirect
 from django.utils.html import format_html
 from .models import Class, Subject, RevisionMaterial, Curriculum, SchemeOfWork, SchemeWeekProgress
 
@@ -9,6 +10,16 @@ class CurriculumAdmin(admin.ModelAdmin):
     list_filter = ['curriculum_type', 'academic_year', 'is_active', 'class_ref__curriculum', 'class_ref__level']
     search_fields = ['subject__name', 'class_ref__name']
     ordering = ['-academic_year', 'subject']
+
+    def add_view(self, request, form_url='', extra_context=None):
+        if not self.has_add_permission(request):
+            return super().add_view(request, form_url, extra_context)
+        return redirect('staff_upload_resource', upload_type='curriculum')
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ('file',)
+        return super().get_readonly_fields(request, obj)
 
 
 @admin.register(SchemeOfWork)

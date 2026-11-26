@@ -24,11 +24,61 @@
 
 {% block content_body %}
 <div class="resource-upload">
+    {% if curriculum_review %}
+    <section class="upload-panel">
+        <div class="mb-4">
+            <h1 class="h4 fw-bold mb-1">Review curriculum source</h1>
+            <p class="text-muted small mb-0">{{ curriculum.subject.name }} · {{ curriculum.class_ref.name }} · {{ curriculum.academic_year }}</p>
+        </div>
+
+        {% if review_error %}
+        <div class="alert alert-warning" role="alert">
+            <strong>The syllabus could not be read.</strong> {{ review_error }}
+            <div class="mt-2">It will remain inactive. Upload a searchable PDF or document before activating this curriculum source.</div>
+        </div>
+        {% else %}
+        <div class="alert alert-success" role="status">Text extracted. Review the source preview and topic suggestions before activating this syllabus.</div>
+        {% endif %}
+
+        {% if review_text %}
+        <details class="mb-4">
+            <summary class="fw-semibold">Extracted document preview</summary>
+            {% if review_truncated %}<p class="form-text mt-2">Preview limited to the first 8,000 characters.</p>{% endif %}
+            <pre class="border rounded-3 bg-light p-3 mt-2" style="max-height:24rem;overflow:auto;white-space:pre-wrap">{{ review_text }}</pre>
+        </details>
+        {% endif %}
+
+        {% if review_topic_limit_reached %}
+        <div class="alert alert-info">Only the first 100 topic suggestions are shown. Review and adjust them before activation.</div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label upload-label" for="{{ review_form.extracted_topics.id_for_label }}">{{ review_form.extracted_topics.label }}</label>
+                {{ review_form.extracted_topics }}
+                {% if review_form.extracted_topics.help_text %}<div class="form-text">{{ review_form.extracted_topics.help_text }}</div>{% endif %}
+                {% for error in review_form.extracted_topics.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="mb-3">
+                <div class="form-check">
+                    {{ review_form.activate }}
+                    <label class="form-check-label fw-semibold" for="{{ review_form.activate.id_for_label }}">{{ review_form.activate.label }}</label>
+                </div>
+                {% for error in review_form.activate.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="d-flex justify-content-between gap-2 mt-4">
+                <button type="submit" name="curriculum_review_action" value="cancel" class="btn btn-light rounded-pill px-4">Discard upload</button>
+                <button type="submit" name="curriculum_review_action" value="confirm" class="btn btn-primary rounded-pill px-4 fw-bold">Save review</button>
+            </div>
+        </form>
+    </section>
+    {% else %}
     <form method="post" enctype="multipart/form-data" class="upload-panel">
         {% csrf_token %}
         <div class="mb-4">
             <h1 class="h4 fw-bold mb-1">{{ label }}</h1>
-            <p class="text-muted small mb-0">Complete the details and choose the file to publish.</p>
+            <p class="text-muted small mb-0">{% if upload_type == 'curriculum' %}Upload the official syllabus to preview its extracted text and review topic suggestions before activation.{% else %}Complete the details and choose the file to publish.{% endif %}</p>
         </div>
 
         {% for field in form %}
@@ -56,5 +106,6 @@
             <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold"><i class="bi bi-upload me-2"></i>Upload</button>
         </div>
     </form>
+    {% endif %}
 </div>
 {% endblock %}

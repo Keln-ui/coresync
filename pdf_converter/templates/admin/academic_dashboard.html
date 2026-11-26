@@ -58,7 +58,7 @@
                 <strong>No active KICD syllabus sources yet.</strong>
                 <div class="small mt-1">AI scheme and exam drafts require an active official syllabus matched to class and subject.</div>
             </div>
-            <a class="btn btn-sm btn-warning rounded-pill ms-auto flex-shrink-0" href="{% url 'admin:revision_curriculum_changelist' %}">Add syllabus</a>
+            <a class="btn btn-sm btn-warning rounded-pill ms-auto flex-shrink-0" href="{% url 'staff_upload_resource' 'curriculum' %}">Add syllabus</a>
         </div>
         {% endif %}
 
@@ -77,7 +77,7 @@
                 <a class="small fw-semibold text-decoration-none" href="{% url 'admin:index' %}">All admin tools <i class="bi bi-arrow-up-right"></i></a>
             </div>
             <div class="row g-3">
-                <div class="col-md-6 col-xl-3"><a class="aa-action" href="{% url 'admin:revision_curriculum_changelist' %}"><span class="aa-action-icon"><i class="bi bi-patch-check"></i></span><span><strong>KICD curriculum sources</strong><small>Upload, activate, and manage class- and subject-matched syllabus files used by AI schemes and exams.</small></span></a></div>
+                <div class="col-md-6 col-xl-3"><a class="aa-action" href="{% url 'admin:revision_curriculum_changelist' %}"><span class="aa-action-icon"><i class="bi bi-patch-check"></i></span><span><strong>KICD curriculum sources</strong><small>Review extracted text and topics before activating syllabus files for AI schemes and exams.</small></span></a></div>
                 <div class="col-md-6 col-xl-3"><a class="aa-action" href="{% url 'admin:revision_revisionmaterial_changelist' %}"><span class="aa-action-icon"><i class="bi bi-journal-plus"></i></span><span><strong>Revision library</strong><small>Publish notes, past papers, marking schemes, syllabuses, and other study resources.</small></span></a></div>
                 <div class="col-md-6 col-xl-3"><a class="aa-action" href="{% url 'admin:revision_schemeofwork_changelist' %}"><span class="aa-action-icon"><i class="bi bi-calendar2-range"></i></span><span><strong>Schemes of work</strong><small>Publish and manage downloadable teacher schemes.</small></span></a></div>
                 <div class="col-md-6 col-xl-3"><a class="aa-action" href="{% url 'ai_assistant' %}"><span class="aa-action-icon"><i class="bi bi-stars"></i></span><span><strong>AI teaching assistant</strong><small>Access syllabus-grounded scheme drafting, exam and marking-scheme builder, study tools, and document Q&amp;A.</small></span></a></div>
