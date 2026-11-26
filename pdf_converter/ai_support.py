@@ -10,6 +10,13 @@ logger = logging.getLogger(__name__)
 MAX_DOCUMENT_CHARS = 40000
 MAX_DOCUMENT_PAGES = 50
 MAX_SYLLABUS_PAGES = 300
+SUPPORTED_DOCUMENT_EXTENSIONS = {
+    '.bmp', '.csv', '.docx', '.jpeg', '.jpg', '.pdf', '.png', '.pptx',
+    '.tif', '.tiff', '.txt', '.webp', '.xlsx',
+}
+SUPPORTED_DOCUMENT_TYPES = (
+    'PDF, DOCX, PPTX, XLSX, CSV, TXT, or an image (PNG, JPG, TIFF, BMP, WEBP)'
+)
 
 CORESYNCH_SERVICES_CONTEXT = """
 CoreSynch is an education and document-services platform. Use the information below when users
@@ -21,7 +28,7 @@ Academic and learning services:
 - Scheme of Work Generator: create teacher-facing, week-by-week schemes of work and export editable
   Microsoft Word documents; users can select class or grade, subject, term, and term length.
 - AI Assistant: provide general guidance, explain or summarize study topics, generate practice
-  quizzes, answer questions about PDF/DOCX/TXT documents, and draft scheme-of-work support.
+  quizzes, answer questions about curriculum documents and scans, and draft scheme-of-work support.
 - Teaching opportunities: browse BOM school teaching vacancies and homeschooling or private tutoring
   jobs, and submit job advertisements through the job posting page.
 - School and user registration: register a school or individual teacher/student account, manage
@@ -53,13 +60,15 @@ class AIServiceError(Exception):
 
 def extract_document_text(uploaded_file, max_pages=MAX_DOCUMENT_PAGES):
     extension = os.path.splitext(uploaded_file.name)[1].lower()
-    if extension not in {'.pdf', '.docx', '.txt'}:
-        raise ValueError('Upload a PDF, DOCX, or TXT document.')
+    if extension not in SUPPORTED_DOCUMENT_EXTENSIONS:
+        raise ValueError(f'Upload a {SUPPORTED_DOCUMENT_TYPES}.')
     if uploaded_file.size > 10 * 1024 * 1024:
         raise ValueError('Documents must be 10 MB or smaller.')
 
     try:
         if extension == '.txt':
+            text = uploaded_file.read().decode('utf-8-sig')
+        elif extension == '.csv':
             text = uploaded_file.read().decode('utf-8-sig')
         elif extension == '.docx':
             from docx import Document
@@ -72,14 +81,62 @@ def extract_document_text(uploaded_file, max_pages=MAX_DOCUMENT_PAGES):
                 for row in table.rows
                 for cell in row.cells
             )
+            parts.extend(
+                paragraph.text
+                for section in document.sections
+                for paragraph in (*section.header.paragraphs, *section.footer.paragraphs)
+            )
+            if not any(part.strip() for part in parts):
+                parts.extend(_extract_docx_image_text(document))
             text = '\n'.join(parts)
+        elif extension == '.pptx':
+            from pptx import Presentation
+
+            presentation = Presentation(uploaded_file)
+            if len(presentation.slides) > max_pages:
+                raise ValueError(f'Documents can contain up to {max_pages} slides.')
+            parts = []
+            for slide in presentation.slides:
+                for shape in slide.shapes:
+                    if shape.has_text_frame:
+                        parts.append(shape.text)
+                    if shape.has_table:
+                        parts.extend(
+                            cell.text
+                            for row in shape.table.rows
+                            for cell in row.cells
+                        )
+            text = '\n'.join(parts)
+        elif extension == '.xlsx':
+            from openpyxl import load_workbook
+
+            workbook = load_workbook(uploaded_file, read_only=True, data_only=True)
+            try:
+                parts = [
+                    str(value)
+                    for sheet in workbook.worksheets
+                    for row in sheet.iter_rows(values_only=True)
+                    for value in row
+                    if value is not None
+                ]
+                text = '\n'.join(parts)
+            finally:
+                workbook.close()
+        elif extension in {'.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff', '.webp'}:
+            text = _extract_image_text(uploaded_file)
         else:
             from PyPDF2 import PdfReader
 
             reader = PdfReader(uploaded_file, strict=False)
             if len(reader.pages) > max_pages:
                 raise ValueError(f'Documents can contain up to {max_pages} pages.')
-            text = '\n'.join(page.extract_text() or '' for page in reader.pages)
+            page_text = [page.extract_text() or '' for page in reader.pages]
+            unreadable_pages = [index for index, content in enumerate(page_text) if not content.strip()]
+            if unreadable_pages:
+                scanned_text = _extract_scanned_pdf_text(uploaded_file, unreadable_pages)
+                for index, content in zip(unreadable_pages, scanned_text):
+                    page_text[index] = content
+            text = '\n'.join(page_text)
     except ValueError:
         raise
     except Exception as exc:
@@ -89,6 +146,76 @@ def extract_document_text(uploaded_file, max_pages=MAX_DOCUMENT_PAGES):
     if not text:
         raise ValueError('No readable text was found in the document.')
     return text[:MAX_DOCUMENT_CHARS]
+
+
+def _get_ocr_engine():
+    try:
+        import pytesseract
+    except ImportError as exc:
+        raise ValueError(
+            'OCR is needed to read scanned pages, but the OCR libraries are not installed on the server.'
+        ) from exc
+
+    try:
+        pytesseract.get_tesseract_version()
+    except pytesseract.TesseractNotFoundError as exc:
+        raise ValueError(
+            'OCR is needed to read scanned pages, but Tesseract OCR is not available on the server.'
+        ) from exc
+    return pytesseract
+
+
+def _extract_image_text(image_file):
+    from PIL import Image
+
+    pytesseract = _get_ocr_engine()
+    with Image.open(image_file) as image:
+        return pytesseract.image_to_string(image)
+
+
+def _extract_scanned_pdf_text(pdf_file, page_indexes):
+    import pypdfium2
+
+    pytesseract = _get_ocr_engine()
+    pdf_file.seek(0)
+    document = pypdfium2.PdfDocument(pdf_file.read())
+    try:
+        pages = []
+        for index in page_indexes:
+            page = document[index]
+            try:
+                image = page.render(scale=2).to_pil()
+                try:
+                    pages.append(pytesseract.image_to_string(image))
+                finally:
+                    image.close()
+            finally:
+                page.close()
+        return pages
+    finally:
+        document.close()
+
+
+def _extract_docx_image_text(document):
+    from io import BytesIO
+
+    from PIL import Image
+
+    if not document.inline_shapes:
+        return []
+    pytesseract = _get_ocr_engine()
+    extracted = []
+    for shape in document.inline_shapes:
+        try:
+            blip = shape._inline.graphic.graphicData.pic.blipFill.blip
+        except AttributeError:
+            continue
+        image_part = document.part.related_parts.get(blip.embed)
+        if image_part is None:
+            continue
+        with Image.open(BytesIO(image_part.blob)) as image:
+            extracted.append(pytesseract.image_to_string(image))
+    return extracted
 
 
 def _get_active_kicd_syllabus(class_name, subject_name):

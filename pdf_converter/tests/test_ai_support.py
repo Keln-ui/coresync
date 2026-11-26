@@ -5,7 +5,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from docx import Document
+from openpyxl import Workbook
 from pdf_converter.views import ai_assistant
+from pptx import Presentation
+from pptx.util import Inches
 from pdf_converter.ai_support import (
     AIServiceError,
     MAX_SYLLABUS_PAGES,
@@ -110,6 +113,68 @@ class AIAssistantTests(TestCase):
         syllabus_text = extract_document_text(uploaded_file, max_pages=MAX_SYLLABUS_PAGES)
 
         self.assertIn('Official syllabus text.', syllabus_text)
+
+    def test_extracts_text_from_powerpoint_and_excel_curriculum_files(self):
+        presentation = Presentation()
+        slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+        slide.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1)).text = 'Learning outcomes'
+        pptx_data = io.BytesIO()
+        presentation.save(pptx_data)
+
+        workbook = Workbook()
+        workbook.active['A1'] = 'Assessment criteria'
+        xlsx_data = io.BytesIO()
+        workbook.save(xlsx_data)
+
+        presentation_text = extract_document_text(
+            SimpleUploadedFile('curriculum.pptx', pptx_data.getvalue())
+        )
+        workbook_text = extract_document_text(
+            SimpleUploadedFile('curriculum.xlsx', xlsx_data.getvalue())
+        )
+
+        self.assertIn('Learning outcomes', presentation_text)
+        self.assertIn('Assessment criteria', workbook_text)
+
+    @patch('pdf_converter.ai_support._get_ocr_engine')
+    @patch('pypdfium2.PdfDocument')
+    @patch('PyPDF2.PdfReader')
+    def test_scanned_pdf_pages_are_read_with_ocr(
+        self, pdf_reader, pdf_document, get_ocr_engine
+    ):
+        pdf_reader.return_value.pages = [
+            Mock(extract_text=Mock(return_value='')),
+            Mock(extract_text=Mock(return_value='Selectable curriculum text.')),
+        ]
+        page = Mock()
+        image = Mock()
+        page.render.return_value.to_pil.return_value = image
+        pdf_document.return_value.__getitem__.return_value = page
+        get_ocr_engine.return_value.image_to_string.return_value = 'Scanned learning outcomes.'
+        uploaded_file = SimpleUploadedFile('scanned-syllabus.pdf', b'%PDF sample')
+
+        text = extract_document_text(uploaded_file)
+
+        self.assertIn('Scanned learning outcomes.', text)
+        self.assertIn('Selectable curriculum text.', text)
+        pdf_document.return_value.__getitem__.assert_called_once_with(0)
+        get_ocr_engine.return_value.image_to_string.assert_called_once_with(image)
+        image.close.assert_called_once()
+        page.close.assert_called_once()
+
+    @patch('pdf_converter.ai_support._get_ocr_engine')
+    def test_extracts_text_from_curriculum_image(self, get_ocr_engine):
+        get_ocr_engine.return_value.image_to_string.return_value = 'Scanned topic'
+        image = io.BytesIO()
+        from PIL import Image
+
+        Image.new('RGB', (10, 10), color='white').save(image, format='PNG')
+
+        text = extract_document_text(
+            SimpleUploadedFile('curriculum.png', image.getvalue())
+        )
+
+        self.assertEqual(text, 'Scanned topic')
 
     @patch('pdf_converter.ai_support.requests.post')
     def test_general_chat_uses_configured_gemini_model(self, post):

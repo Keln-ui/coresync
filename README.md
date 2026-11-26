@@ -21,6 +21,7 @@ A Django-based web application that converts various types of PDF files to Word 
 
 3. Install Tesseract OCR (required for scanned PDFs):
    - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
+   - Debian/Ubuntu: `sudo apt install tesseract-ocr`
    - Add Tesseract to your system PATH
 
 4. Install LibreOffice on the application host and make `soffice` or `libreoffice` available on PATH. It is required for Word-to-PDF conversions to preserve the document's layout and styling; the application will report an error rather than return a reformatted PDF if LibreOffice is unavailable.

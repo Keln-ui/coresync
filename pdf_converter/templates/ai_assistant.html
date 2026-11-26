@@ -17,7 +17,7 @@
     {% endif %}
 
     <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-lg-4"><div class="h-100 rounded-4 border bg-white p-3"><i class="bi bi-file-earmark-text text-primary fs-4"></i><div class="fw-semibold mt-2">Document Q&amp;A</div><small class="text-secondary">Ask questions about PDF, DOCX, or TXT files.</small></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="h-100 rounded-4 border bg-white p-3"><i class="bi bi-file-earmark-text text-primary fs-4"></i><div class="fw-semibold mt-2">Document Q&amp;A</div><small class="text-secondary">Ask questions about PDFs, Word documents, presentations, spreadsheets, text files, and scanned pages.</small></div></div>
         <div class="col-sm-6 col-lg-4"><div class="h-100 rounded-4 border bg-white p-3"><i class="bi bi-mortarboard text-success fs-4"></i><div class="fw-semibold mt-2">Study tools</div><small class="text-secondary">Get explanations, summaries, and practice quizzes.</small></div></div>
         <div class="col-sm-6 col-lg-4"><div class="h-100 rounded-4 border bg-white p-3"><i class="bi bi-calendar2-week text-warning fs-4"></i><div class="fw-semibold mt-2">Scheme drafts</div><small class="text-secondary">Draft a 10-column scheme grounded in the active KICD syllabus.</small></div></div>
         <div class="col-sm-6 col-lg-4"><div class="h-100 rounded-4 border bg-white p-3"><i class="bi bi-file-earmark-check text-danger fs-4"></i><div class="fw-semibold mt-2">Exam builder</div><small class="text-secondary">Generate a syllabus-based exam and separate marking scheme as a Word document.</small></div></div>
@@ -109,8 +109,8 @@
 
                 <div id="documentOptions" class="mb-3 d-none">
                     <label class="form-label fw-semibold" for="document">Reference document</label>
-                    <input class="form-control" id="document" name="document" type="file" accept=".pdf,.docx,.txt">
-                    <div class="form-text">PDF, DOCX, or TXT; up to 10 MB and 50 PDF pages. Scanned PDFs without selectable text may not work.</div>
+                    <input class="form-control" id="document" name="document" type="file" accept=".pdf,.docx,.pptx,.xlsx,.csv,.txt,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp">
+                    <div class="form-text">PDF, DOCX, PPTX, XLSX, CSV, TXT, or PNG/JPG/TIFF/BMP/WEBP image; up to 10 MB and 50 pages or slides. Scanned pages are read with OCR.</div>
                     <div class="form-check mt-2">
                         <input class="form-check-input" id="documentConsent" name="document_consent" type="checkbox" value="yes">
                         <label class="form-check-label small" for="documentConsent">I understand this document will be sent to Google Gemini to answer my request.</label>
