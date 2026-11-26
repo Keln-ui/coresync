@@ -52,7 +52,7 @@ GEMINI_API_KEY=your-gemini-api-key
 GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-Set these as environment variables or add them to a local `.env` file that is not committed to source control, then restart the Django server. Keep the API key private. AI prompts and requests are sent to Google Gemini; uploaded document content is sent only after the user checks the consent box. The assistant extracts text from PDF, DOCX, and TXT files (maximum 10 MB; PDF documents are limited to 50 pages), so scanned PDFs without selectable text may not be readable. Review AI-generated answers and verify curriculum information against official sources.
+Set these as environment variables or add them to a local `.env` file that is not committed to source control, then restart the Django server. Keep the API key private. AI prompts and requests are sent to Google Gemini; uploaded document content is sent only after the user checks the consent box. The assistant extracts text from PDF, DOCX, PPTX, XLSX, CSV, TXT, and common image files (maximum 10 MB; documents are limited to 50 pages or slides). Scanned pages use Tesseract when installed, otherwise Gemini OCR; the hosting server must allow outbound HTTPS to `generativelanguage.googleapis.com` for Gemini. Review AI-generated answers and verify curriculum information against official sources.
 
 General chat supports follow-up questions and keeps up to five recent exchanges in the visitor's session. Use **New conversation** to clear that history.
 

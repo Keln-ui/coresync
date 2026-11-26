@@ -208,7 +208,11 @@ def _extract_with_gemini_ocr(file_bytes, mime_type):
             timeout=90,
         )
     except requests.RequestException as exc:
-        raise ValueError('Gemini OCR could not reach the AI service. Please try again shortly.') from exc
+        logger.warning('Gemini OCR request failed: %s', exc)
+        raise ValueError(
+            'Gemini OCR could not reach the AI service. Check that the server allows outbound HTTPS '
+            'connections to generativelanguage.googleapis.com, or install Tesseract OCR on the server.'
+        ) from exc
 
     if response.status_code == 429:
         raise ValueError('Gemini OCR is temporarily rate-limiting requests. Please try again shortly.')

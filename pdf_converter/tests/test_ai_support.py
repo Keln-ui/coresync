@@ -1,14 +1,16 @@
 import io
 from unittest.mock import Mock, patch
 
+import requests
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from docx import Document
 from openpyxl import Workbook
-from pdf_converter.views import ai_assistant
 from pptx import Presentation
 from pptx.util import Inches
+
+from pdf_converter.views import ai_assistant
 from pdf_converter.ai_support import (
     AIServiceError,
     MAX_SYLLABUS_PAGES,
@@ -197,6 +199,16 @@ class AIAssistantTests(TestCase):
         with patch('PyPDF2.PdfReader') as pdf_reader:
             pdf_reader.return_value.pages = [Mock(extract_text=Mock(return_value=''))]
             with self.assertRaisesMessage(ValueError, 'Tesseract OCR or a configured GEMINI_API_KEY'):
+                extract_document_text(
+                    SimpleUploadedFile('scanned-syllabus.pdf', b'%PDF scanned syllabus')
+                )
+
+    @patch('pdf_converter.ai_support._get_ocr_engine', return_value=None)
+    @patch('pdf_converter.ai_support.requests.post', side_effect=requests.ConnectionError('Connection refused'))
+    def test_scanned_pdf_reports_gemini_network_requirement(self, post, get_ocr_engine):
+        with patch('PyPDF2.PdfReader') as pdf_reader:
+            pdf_reader.return_value.pages = [Mock(extract_text=Mock(return_value=''))]
+            with self.assertRaisesMessage(ValueError, 'outbound HTTPS connections'):
                 extract_document_text(
                     SimpleUploadedFile('scanned-syllabus.pdf', b'%PDF scanned syllabus')
                 )
