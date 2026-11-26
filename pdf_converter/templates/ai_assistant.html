@@ -69,6 +69,11 @@
                     </div>
                     <div class="col-md-6"><label class="form-label fw-semibold" for="term">Term</label><input class="form-control" id="term" name="term" maxlength="50" placeholder="e.g. Term 1"></div>
                     <div class="col-md-6"><label class="form-label fw-semibold" for="weeks">Weeks in term</label><input class="form-control" id="weeks" name="weeks" type="number" min="1" max="16" value="12"></div>
+                    <fieldset class="col-12" id="schemeTopicPicker" disabled>
+                        <legend class="form-label fw-semibold mb-1">Curriculum topics to include</legend>
+                        <div id="schemeTopicsStatus" class="form-text mb-2" aria-live="polite">Choose a class and subject to load available curriculum topics.</div>
+                        <div id="schemeTopics" class="row g-2"></div>
+                    </fieldset>
                     <div class="col-12 form-text">Schemes are drafted from an active official KICD syllabus uploaded for the selected class and subject. If no matching syllabus is available, the AI will not generate a generic substitute.</div>
                 </div>
 
@@ -91,7 +96,11 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-12"><label class="form-label fw-semibold" for="examTopics">Topics to assess</label><textarea class="form-control" id="examTopics" name="exam_topics" rows="2" maxlength="1000" placeholder="e.g. Agricultural land, soil fertility, crop production"></textarea></div>
+                    <fieldset class="col-12" id="examTopicPicker" disabled>
+                        <legend class="form-label fw-semibold mb-1">Curriculum topics to assess</legend>
+                        <div id="examTopicsStatus" class="form-text mb-2" aria-live="polite">Choose a class and subject to load available curriculum topics.</div>
+                        <div id="examTopics" class="row g-2"></div>
+                    </fieldset>
                     <div class="col-md-4"><label class="form-label fw-semibold" for="examDifficulty">Difficulty</label><select class="form-select" id="examDifficulty" name="exam_difficulty"><option value="mixed">Mixed</option><option value="basic">Basic</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></div>
                     <div class="col-md-4"><label class="form-label fw-semibold" for="examMarks">Total marks</label><input class="form-control" id="examMarks" name="exam_marks" type="number" min="10" max="200" value="50"></div>
                     <div class="col-md-4"><label class="form-label fw-semibold" for="examDuration">Duration (minutes)</label><input class="form-control" id="examDuration" name="exam_duration" type="number" min="15" max="240" value="60"></div>
@@ -171,6 +180,16 @@
     const mode = document.getElementById('aiMode');
     const studyOptions = document.getElementById('studyOptions');
     const schemeOptions = document.getElementById('schemeOptions');
+    const schemeClass = document.getElementById('className');
+    const schemeSubject = document.getElementById('subject');
+    const schemeTopicPicker = document.getElementById('schemeTopicPicker');
+    const schemeTopics = document.getElementById('schemeTopics');
+    const schemeTopicsStatus = document.getElementById('schemeTopicsStatus');
+    const examClass = document.getElementById('examClassName');
+    const examSubject = document.getElementById('examSubject');
+    const examTopicPicker = document.getElementById('examTopicPicker');
+    const examTopics = document.getElementById('examTopics');
+    const examTopicsStatus = document.getElementById('examTopicsStatus');
     const examOptions = document.getElementById('examOptions');
     const documentOptions = document.getElementById('documentOptions');
     const message = document.getElementById('aiMessage');
@@ -185,6 +204,73 @@
     const submit = document.getElementById('aiSubmit');
     const submitLabel = document.getElementById('submitLabel');
     const clearChatUrl = "{% url 'ai_assistant_clear' %}";
+    const schemeTopicsUrl = "{% url 'ai_assistant_topics' %}";
+
+    function createTopicLoader(classField, subjectField, picker, container, status, fieldName, idPrefix, actionLabel) {
+        let requestId = 0;
+        return async function loadTopics() {
+            const currentRequestId = ++requestId;
+            picker.disabled = true;
+            container.replaceChildren();
+            if (!classField.value || !subjectField.value) {
+                status.textContent = 'Choose a class and subject to load available curriculum topics.';
+                return;
+            }
+
+            status.textContent = 'Loading topics from the active curriculum…';
+            try {
+                const query = new URLSearchParams({
+                    class_name: classField.value,
+                    subject: subjectField.value
+                });
+                const response = await fetch(`${schemeTopicsUrl}?${query}`);
+                const data = await response.json();
+                if (currentRequestId !== requestId) return;
+                if (!response.ok) throw new Error(data.error || 'Could not load curriculum topics.');
+                if (!data.topics.length) {
+                    status.textContent = 'No topics were found in this curriculum.';
+                    return;
+                }
+                data.topics.forEach((topic, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'col-sm-6 col-lg-4';
+                    const check = document.createElement('input');
+                    check.className = 'form-check-input me-2';
+                    check.type = 'checkbox';
+                    check.name = fieldName;
+                    check.value = topic;
+                    check.id = `${idPrefix}${index}`;
+                    const label = document.createElement('label');
+                    label.className = 'form-check-label';
+                    label.htmlFor = check.id;
+                    label.textContent = topic;
+                    const item = document.createElement('div');
+                    item.className = 'form-check';
+                    item.append(check, label);
+                    wrapper.append(item);
+                    container.append(wrapper);
+                });
+                picker.disabled = false;
+                status.textContent = `Select one or more topics ${actionLabel}.`;
+            } catch (error) {
+                if (currentRequestId !== requestId) return;
+                status.textContent = error.message || 'Could not load curriculum topics.';
+            }
+        };
+    }
+
+    const loadSchemeTopics = createTopicLoader(
+        schemeClass, schemeSubject, schemeTopicPicker, schemeTopics, schemeTopicsStatus,
+        'topics', 'schemeTopic', 'to include in the scheme'
+    );
+    const loadExamTopics = createTopicLoader(
+        examClass, examSubject, examTopicPicker, examTopics, examTopicsStatus,
+        'exam_topics', 'examTopic', 'to assess'
+    );
+    schemeClass.addEventListener('change', loadSchemeTopics);
+    schemeSubject.addEventListener('change', loadSchemeTopics);
+    examClass.addEventListener('change', loadExamTopics);
+    examSubject.addEventListener('change', loadExamTopics);
 
     function updateChatVisibility() {
         chatTranscript.classList.toggle('d-none', mode.value !== 'chat' || chatMessages.children.length === 0);

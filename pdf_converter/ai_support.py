@@ -91,7 +91,7 @@ def extract_document_text(uploaded_file, max_pages=MAX_DOCUMENT_PAGES):
     return text[:MAX_DOCUMENT_CHARS]
 
 
-def get_kicd_syllabus_context(class_name, subject_name):
+def _get_active_kicd_syllabus(class_name, subject_name):
     from revision.models import Curriculum
 
     curricula = Curriculum.objects.filter(
@@ -113,7 +113,11 @@ def get_kicd_syllabus_context(class_name, subject_name):
             'No active KICD syllabus is available for this class and subject. '
             'Ask an administrator to upload and activate the official syllabus in Django Admin.'
         )
+    return syllabus
 
+
+def get_kicd_syllabus_context(class_name, subject_name):
+    syllabus = _get_active_kicd_syllabus(class_name, subject_name)
     if not syllabus.file:
         raise ValueError('The stored KICD syllabus has no readable file. Ask an administrator to replace it.')
     try:
@@ -132,6 +136,28 @@ def get_kicd_syllabus_context(class_name, subject_name):
         f"{syllabus.get_curriculum_type_display()}, {syllabus.academic_year}"
     )
     return syllabus_text, source_label
+
+
+def get_kicd_syllabus_topics(class_name, subject_name):
+    syllabus = _get_active_kicd_syllabus(class_name, subject_name)
+    topic_text = syllabus.extracted_topics
+    if not topic_text.strip():
+        topic_text, _ = get_kicd_syllabus_context(class_name, subject_name)
+
+    topics = []
+    seen = set()
+    for line in topic_text.splitlines():
+        topic = line.strip()
+        normalized_topic = topic.casefold()
+        if len(topic) < 3 or len(topic) > 300 or normalized_topic in seen:
+            continue
+        seen.add(normalized_topic)
+        topics.append(topic)
+        if len(topics) == 100:
+            break
+    if not topics:
+        raise ValueError('No selectable topics were found in the active curriculum for this subject.')
+    return topics
 
 
 def build_ai_exam_docx(

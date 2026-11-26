@@ -20,6 +20,7 @@ urlpatterns = [
     path('history/', views.conversion_history, name='conversion_history'),
     path('search/', views.search_materials, name='search_materials'),
     path('ai/', views.ai_assistant, name='ai_assistant'),
+    path('ai/topics/', views.ai_assistant_topics, name='ai_assistant_topics'),
     path('ai/generate/', views.ai_assistant_generate, name='ai_assistant_generate'),
     path('ai/clear/', views.ai_assistant_clear, name='ai_assistant_clear'),
     path('admin-dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),

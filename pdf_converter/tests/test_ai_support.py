@@ -12,8 +12,9 @@ from pdf_converter.ai_support import (
     extract_document_text,
     generate_ai_response,
     get_kicd_syllabus_context,
+    get_kicd_syllabus_topics,
 )
-from revision.models import Class, Subject
+from revision.models import Class, Curriculum, Subject
 
 
 @override_settings(
@@ -52,6 +53,48 @@ class AIAssistantTests(TestCase):
         context = render_template.call_args.args[2]
         self.assertEqual(list(context['classes']), [class_ref])
         self.assertEqual(list(context['subjects']), [subject.name])
+
+    def test_scheme_topics_endpoint_returns_topics_for_the_selected_curriculum(self):
+        class_ref = Class.objects.create(name='Grade 10', curriculum='cbe', level='secondary')
+        subject = Subject.objects.create(name='Applied Agriculture')
+        Curriculum.objects.create(
+            class_ref=class_ref,
+            subject=subject,
+            curriculum_type='cbc',
+            academic_year='2026',
+            file=SimpleUploadedFile('curriculum.pdf', b'%PDF sample'),
+            extracted_topics='Agricultural land\nCrop production',
+        )
+
+        response = self.client.get(reverse('ai_assistant_topics'), {
+            'class_name': class_ref.name,
+            'subject': subject.name,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['topics'], ['Agricultural land', 'Crop production'])
+        Curriculum.objects.get().file.delete(save=False)
+
+    @patch(
+        'pdf_converter.ai_support.get_kicd_syllabus_context',
+        return_value=('Strand\nCrop production\nLearning outcome', 'Official syllabus'),
+    )
+    def test_scheme_topics_fall_back_to_the_syllabus_file_when_not_pre_extracted(self, get_context):
+        class_ref = Class.objects.create(name='Grade 10', curriculum='cbe', level='secondary')
+        subject = Subject.objects.create(name='Applied Agriculture')
+        curriculum = Curriculum.objects.create(
+            class_ref=class_ref,
+            subject=subject,
+            curriculum_type='cbc',
+            academic_year='2026',
+            file=SimpleUploadedFile('curriculum.pdf', b'%PDF sample'),
+        )
+
+        topics = get_kicd_syllabus_topics(class_ref.name, subject.name)
+
+        self.assertEqual(topics, ['Strand', 'Crop production', 'Learning outcome'])
+        get_context.assert_called_once_with(class_ref.name, subject.name)
+        curriculum.file.delete(save=False)
 
     @patch('PyPDF2.PdfReader')
     def test_syllabus_extraction_allows_more_pages_than_user_documents(self, pdf_reader):
@@ -216,6 +259,7 @@ class AIAssistantTests(TestCase):
             'subject': 'Applied Agriculture',
             'term': 'Term 1',
             'weeks': '12',
+            'topics': ['Agricultural land'],
         })
 
         self.assertEqual(response.status_code, 400)
@@ -224,8 +268,9 @@ class AIAssistantTests(TestCase):
         get_syllabus.assert_called_once_with('Grade 10', 'Applied Agriculture')
 
     @patch('pdf_converter.views.get_kicd_syllabus_context', return_value=('KICD land syllabus.', 'Applied Agriculture — Grade 10, CBC, 2026'))
+    @patch('pdf_converter.views.get_kicd_syllabus_topics', return_value=['Agricultural land', 'Crop production'])
     @patch('pdf_converter.ai_support.requests.post')
-    def test_scheme_generator_requests_reference_table_format(self, post, get_syllabus):
+    def test_scheme_generator_requests_reference_table_format(self, post, get_topics, get_syllabus):
         gemini_response = Mock(status_code=200)
         gemini_response.json.return_value = {
             'candidates': [{'content': {'parts': [{
@@ -244,6 +289,7 @@ class AIAssistantTests(TestCase):
             'subject': 'Applied Agriculture',
             'term': 'Term 1',
             'weeks': '12',
+            'topics': ['Agricultural land'],
             'message': 'Include land productivity and agricultural uses.',
         })
 
@@ -269,13 +315,37 @@ class AIAssistantTests(TestCase):
         self.assertIn('Key Inquiry Question(s)', sent_prompt)
         self.assertIn('Learning Experiences', sent_prompt)
         self.assertIn('Assessment Methods', sent_prompt)
+        self.assertIn('Selected curriculum topics:\nAgricultural land', sent_prompt)
+        self.assertNotIn('Selected curriculum topics:\nAgricultural land\nCrop production', sent_prompt)
+        get_topics.assert_called_once_with('Grade 10', 'Applied Agriculture')
+
+    @patch('pdf_converter.views.get_kicd_syllabus_context', return_value=('KICD land syllabus.', 'Applied Agriculture — Grade 10, CBC, 2026'))
+    @patch('pdf_converter.views.get_kicd_syllabus_topics', return_value=['Agricultural land'])
+    @patch('pdf_converter.ai_support.requests.post')
+    def test_scheme_generator_rejects_topics_not_in_the_selected_curriculum(
+        self, post, get_topics, get_syllabus
+    ):
+        response = self.client.post(reverse('ai_assistant_generate'), {
+            'mode': 'scheme',
+            'class_name': 'Grade 10',
+            'subject': 'Applied Agriculture',
+            'term': 'Term 1',
+            'weeks': '12',
+            'topics': ['Mathematics'],
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Choose topics from the active curriculum', response.json()['error'])
+        post.assert_not_called()
+        get_topics.assert_called_once_with('Grade 10', 'Applied Agriculture')
 
     @patch(
         'pdf_converter.views.get_kicd_syllabus_context',
         return_value=('Official agriculture syllabus content.', 'Applied Agriculture — Grade 10, CBC, 2026'),
     )
+    @patch('pdf_converter.views.get_kicd_syllabus_topics', return_value=['Soil conservation', 'Crop rotation'])
     @patch('pdf_converter.ai_support.requests.post')
-    def test_exam_builder_downloads_word_exam_with_separate_marking_scheme(self, post, get_syllabus):
+    def test_exam_builder_downloads_word_exam_with_separate_marking_scheme(self, post, get_topics, get_syllabus):
         gemini_response = Mock(status_code=200)
         gemini_response.json.return_value = {
             'candidates': [{'content': {'parts': [{
@@ -295,7 +365,7 @@ class AIAssistantTests(TestCase):
             'mode': 'exam',
             'exam_class_name': 'Grade 10',
             'exam_subject': 'Applied Agriculture',
-            'exam_topics': 'Soil conservation, crop rotation',
+            'exam_topics': ['Soil conservation', 'Crop rotation'],
             'exam_difficulty': 'mixed',
             'exam_marks': '10',
             'exam_duration': '30',
@@ -316,15 +386,18 @@ class AIAssistantTests(TestCase):
         sent_prompt = post.call_args.kwargs['json']['contents'][0]['parts'][0]['text']
         self.assertIn('Official agriculture syllabus content.', sent_prompt)
         self.assertIn('Total marks: 10', sent_prompt)
+        self.assertIn('Topics: Soil conservation, Crop rotation', sent_prompt)
+        get_topics.assert_called_once_with('Grade 10', 'Applied Agriculture')
         self.assertEqual(get_syllabus.call_args.args, ('Grade 10', 'Applied Agriculture'))
 
     @patch(
         'pdf_converter.views.get_kicd_syllabus_context',
         return_value=('Official agriculture syllabus content.', 'Applied Agriculture — Grade 10, CBC, 2026'),
     )
+    @patch('pdf_converter.views.get_kicd_syllabus_topics', return_value=['Soil conservation'])
     @patch('pdf_converter.ai_support.requests.post')
     def test_exam_builder_accepts_topic_wording_variations_and_reports_unmatched_topics(
-        self, post, get_syllabus
+        self, post, get_topics, get_syllabus
     ):
         gemini_response = Mock(status_code=200)
         gemini_response.json.return_value = {
@@ -338,7 +411,7 @@ class AIAssistantTests(TestCase):
             'mode': 'exam',
             'exam_class_name': 'Grade 10',
             'exam_subject': 'Applied Agriculture',
-            'exam_topics': 'ungrammatical topic request',
+            'exam_topics': ['Soil conservation'],
             'exam_difficulty': 'mixed',
             'exam_marks': '10',
             'exam_duration': '30',
@@ -350,6 +423,7 @@ class AIAssistantTests(TestCase):
         self.assertIn('Do not require an exact wording match', sent_prompt)
         self.assertIn('correct obvious spelling or grammar errors', sent_prompt)
         get_syllabus.assert_called_once_with('Grade 10', 'Applied Agriculture')
+        get_topics.assert_called_once_with('Grade 10', 'Applied Agriculture')
 
     @patch('pdf_converter.ai_support.requests.post')
     def test_exam_builder_validates_mark_limit(self, post):
@@ -357,7 +431,7 @@ class AIAssistantTests(TestCase):
             'mode': 'exam',
             'exam_class_name': 'Grade 10',
             'exam_subject': 'Applied Agriculture',
-            'exam_topics': 'Soil conservation',
+            'exam_topics': ['Soil conservation'],
             'exam_marks': '250',
             'exam_duration': '60',
         })
@@ -365,6 +439,26 @@ class AIAssistantTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('Exam marks must be 10–200', response.json()['error'])
         post.assert_not_called()
+
+    @patch('pdf_converter.views.get_kicd_syllabus_context', return_value=('Syllabus.', 'Official syllabus'))
+    @patch('pdf_converter.views.get_kicd_syllabus_topics', return_value=['Soil conservation'])
+    @patch('pdf_converter.ai_support.requests.post')
+    def test_exam_builder_rejects_topics_not_in_the_selected_curriculum(
+        self, post, get_topics, get_syllabus
+    ):
+        response = self.client.post(reverse('ai_assistant_generate'), {
+            'mode': 'exam',
+            'exam_class_name': 'Grade 10',
+            'exam_subject': 'Applied Agriculture',
+            'exam_topics': ['Mathematics'],
+            'exam_marks': '50',
+            'exam_duration': '60',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Choose topics from the active curriculum', response.json()['error'])
+        post.assert_not_called()
+        get_topics.assert_called_once_with('Grade 10', 'Applied Agriculture')
 
     @patch('pdf_converter.ai_support.requests.post')
     def test_missing_model_returns_actionable_configuration_error(self, post):
