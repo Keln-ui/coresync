@@ -162,6 +162,45 @@ class AIAssistantTests(TestCase):
         image.close.assert_called_once()
         page.close.assert_called_once()
 
+    @patch('pdf_converter.ai_support._get_ocr_engine', return_value=None)
+    @patch('PyPDF2.PdfReader')
+    @patch('pdf_converter.ai_support.requests.post')
+    def test_scanned_pdf_uses_gemini_when_tesseract_is_unavailable(
+        self, post, pdf_reader, get_ocr_engine
+    ):
+        pdf_reader.return_value.pages = [Mock(extract_text=Mock(return_value=''))]
+        post.return_value = Mock(
+            status_code=200,
+            json=Mock(return_value={
+                'candidates': [{'content': {'parts': [{'text': 'Transcribed syllabus text.'}]}}]
+            }),
+        )
+        pdf_bytes = b'%PDF scanned syllabus'
+        uploaded_file = SimpleUploadedFile('scanned-syllabus.pdf', pdf_bytes)
+
+        text = extract_document_text(uploaded_file)
+
+        self.assertEqual(text, 'Transcribed syllabus text.')
+        self.assertEqual(
+            post.call_args.kwargs['json']['contents'][0]['parts'][1]['inline_data'],
+            {
+                'mime_type': 'application/pdf',
+                'data': 'JVBERiBzY2FubmVkIHN5bGxhYnVz',
+            },
+        )
+
+    @patch('pdf_converter.ai_support._get_ocr_engine', return_value=None)
+    @override_settings(GEMINI_API_KEY='')
+    def test_scanned_pdf_reports_when_neither_ocr_option_is_configured(
+        self, get_ocr_engine
+    ):
+        with patch('PyPDF2.PdfReader') as pdf_reader:
+            pdf_reader.return_value.pages = [Mock(extract_text=Mock(return_value=''))]
+            with self.assertRaisesMessage(ValueError, 'Tesseract OCR or a configured GEMINI_API_KEY'):
+                extract_document_text(
+                    SimpleUploadedFile('scanned-syllabus.pdf', b'%PDF scanned syllabus')
+                )
+
     @patch('pdf_converter.ai_support._get_ocr_engine')
     def test_extracts_text_from_curriculum_image(self, get_ocr_engine):
         get_ocr_engine.return_value.image_to_string.return_value = 'Scanned topic'
