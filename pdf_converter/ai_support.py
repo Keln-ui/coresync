@@ -136,14 +136,9 @@ def extract_document_text(uploaded_file, max_pages=MAX_DOCUMENT_PAGES):
             unreadable_pages = [index for index, content in enumerate(page_text) if not content.strip()]
             if unreadable_pages:
                 scanned_text = _extract_scanned_pdf_text(uploaded_file, unreadable_pages)
-                if isinstance(scanned_text, str):
-                    text = scanned_text
-                else:
-                    for index, content in zip(unreadable_pages, scanned_text):
-                        page_text[index] = content
-                    text = '\n'.join(page_text)
-            else:
-                text = '\n'.join(page_text)
+                for index, content in zip(unreadable_pages, scanned_text):
+                    page_text[index] = content
+            text = '\n'.join(page_text)
     except ValueError:
         raise
     except Exception as exc:
@@ -253,8 +248,6 @@ def _extract_scanned_pdf_text(pdf_file, page_indexes):
     pytesseract = _get_ocr_engine()
     pdf_file.seek(0)
     pdf_bytes = pdf_file.read()
-    if pytesseract is None:
-        return _extract_with_gemini_ocr(pdf_bytes, 'application/pdf')
     document = pypdfium2.PdfDocument(pdf_bytes)
     try:
         pages = []
@@ -263,7 +256,12 @@ def _extract_scanned_pdf_text(pdf_file, page_indexes):
             try:
                 image = page.render(scale=2).to_pil()
                 try:
-                    pages.append(pytesseract.image_to_string(image))
+                    if pytesseract is not None:
+                        pages.append(pytesseract.image_to_string(image))
+                    else:
+                        jpeg = BytesIO()
+                        image.convert('RGB').save(jpeg, format='JPEG', quality=85)
+                        pages.append(_extract_with_gemini_ocr(jpeg.getvalue(), 'image/jpeg'))
                 finally:
                     image.close()
             finally:

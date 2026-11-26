@@ -1,3 +1,4 @@
+import base64
 import io
 from unittest.mock import Mock, patch
 
@@ -165,53 +166,70 @@ class AIAssistantTests(TestCase):
         page.close.assert_called_once()
 
     @patch('pdf_converter.ai_support._get_ocr_engine', return_value=None)
+    @patch('pypdfium2.PdfDocument')
     @patch('PyPDF2.PdfReader')
     @patch('pdf_converter.ai_support.requests.post')
     def test_scanned_pdf_uses_gemini_when_tesseract_is_unavailable(
-        self, post, pdf_reader, get_ocr_engine
+        self, post, pdf_reader, pdf_document, get_ocr_engine
     ):
+        from PIL import Image
+
         pdf_reader.return_value.pages = [Mock(extract_text=Mock(return_value=''))]
+        page = Mock()
+        page.render.return_value.to_pil.return_value = Image.new('RGB', (10, 10), color='white')
+        pdf_document.return_value.__getitem__.return_value = page
         post.return_value = Mock(
             status_code=200,
             json=Mock(return_value={
                 'candidates': [{'content': {'parts': [{'text': 'Transcribed syllabus text.'}]}}]
             }),
         )
-        pdf_bytes = b'%PDF scanned syllabus'
-        uploaded_file = SimpleUploadedFile('scanned-syllabus.pdf', pdf_bytes)
+        uploaded_file = SimpleUploadedFile('scanned-syllabus.pdf', b'%PDF scanned syllabus')
 
         text = extract_document_text(uploaded_file)
 
         self.assertEqual(text, 'Transcribed syllabus text.')
-        self.assertEqual(
-            post.call_args.kwargs['json']['contents'][0]['parts'][1]['inline_data'],
-            {
-                'mime_type': 'application/pdf',
-                'data': 'JVBERiBzY2FubmVkIHN5bGxhYnVz',
-            },
-        )
+        image_data = post.call_args.kwargs['json']['contents'][0]['parts'][1]['inline_data']
+        self.assertEqual(image_data['mime_type'], 'image/jpeg')
+        self.assertTrue(base64.b64decode(image_data['data']).startswith(b'\xff\xd8'))
+        pdf_document.assert_called_once_with(b'%PDF scanned syllabus')
+        pdf_document.return_value.__getitem__.assert_called_once_with(0)
 
     @patch('pdf_converter.ai_support._get_ocr_engine', return_value=None)
     @override_settings(GEMINI_API_KEY='')
     def test_scanned_pdf_reports_when_neither_ocr_option_is_configured(
         self, get_ocr_engine
     ):
+        from PIL import Image
+
         with patch('PyPDF2.PdfReader') as pdf_reader:
             pdf_reader.return_value.pages = [Mock(extract_text=Mock(return_value=''))]
-            with self.assertRaisesMessage(ValueError, 'Tesseract OCR or a configured GEMINI_API_KEY'):
-                extract_document_text(
-                    SimpleUploadedFile('scanned-syllabus.pdf', b'%PDF scanned syllabus')
-                )
+            with patch('pypdfium2.PdfDocument') as pdf_document:
+                page = Mock()
+                page.render.return_value.to_pil.return_value = Image.new('RGB', (10, 10), color='white')
+                pdf_document.return_value.__getitem__.return_value = page
+                with self.assertRaisesMessage(ValueError, 'Tesseract OCR or a configured GEMINI_API_KEY'):
+                    extract_document_text(
+                        SimpleUploadedFile('scanned-syllabus.pdf', b'%PDF scanned syllabus')
+                    )
 
     @patch('pdf_converter.ai_support._get_ocr_engine', return_value=None)
+    @patch('pypdfium2.PdfDocument')
+    @patch('PyPDF2.PdfReader')
     @patch('pdf_converter.ai_support.requests.post', side_effect=requests.ConnectionError('Connection refused'))
-    def test_scanned_pdf_reports_gemini_network_requirement(self, post, get_ocr_engine):
-        with patch('PyPDF2.PdfReader') as pdf_reader:
-            pdf_reader.return_value.pages = [Mock(extract_text=Mock(return_value=''))]
-            with self.assertRaisesMessage(ValueError, 'outbound HTTPS connections'):
-                extract_document_text(
-                    SimpleUploadedFile('scanned-syllabus.pdf', b'%PDF scanned syllabus')
-                )
+    def test_scanned_pdf_reports_gemini_network_requirement(
+        self, post, pdf_reader, pdf_document, get_ocr_engine
+    ):
+        from PIL import Image
+
+        pdf_reader.return_value.pages = [Mock(extract_text=Mock(return_value=''))]
+        page = Mock()
+        page.render.return_value.to_pil.return_value = Image.new('RGB', (10, 10), color='white')
+        pdf_document.return_value.__getitem__.return_value = page
+        with self.assertRaisesMessage(ValueError, 'outbound HTTPS connections'):
+            extract_document_text(
+                SimpleUploadedFile('scanned-syllabus.pdf', b'%PDF scanned syllabus')
+            )
 
     @patch('pdf_converter.ai_support._get_ocr_engine')
     def test_extracts_text_from_curriculum_image(self, get_ocr_engine):
