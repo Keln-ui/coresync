@@ -1,5 +1,6 @@
 import csv
 import io
+import os
 import stat
 import zipfile
 import zlib
@@ -307,6 +308,24 @@ class SchemeOfWorkUploadForm(forms.ModelForm):
 
 
 class CurriculumUploadForm(forms.ModelForm):
+    SUPPORTED_CURRICULUM_EXTENSIONS = {
+        '.pdf', '.docx', '.pptx', '.xlsx', '.csv', '.txt',
+        '.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff', '.webp',
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        class_id = None
+        if self.is_bound:
+            class_id = self.data.get(self.add_prefix('class_ref'))
+        elif self.initial.get('class_ref'):
+            class_id = self.initial['class_ref']
+
+        if class_id:
+            self.fields['subject'].queryset = Subject.objects.filter(
+                class_ref_id=class_id
+            ).order_by('name')
+
     class Meta:
         model = Curriculum
         fields = (
@@ -315,8 +334,6 @@ class CurriculumUploadForm(forms.ModelForm):
             'curriculum_type',
             'academic_year',
             'file',
-            'extracted_topics',
-            'is_active',
         )
         widgets = {
             'class_ref': forms.Select(attrs={'class': 'form-select'}),
@@ -324,22 +341,36 @@ class CurriculumUploadForm(forms.ModelForm):
             'curriculum_type': forms.Select(attrs={'class': 'form-select'}),
             'academic_year': forms.TextInput(attrs={'class': 'form-control'}),
             'file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-            'extracted_topics': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         help_texts = {
             'file': (
                 'Upload the official syllabus as PDF, DOCX, PPTX, XLSX, CSV, TXT, '
                 'or a scanned image. Scanned pages need Tesseract or Gemini OCR.'
             ),
-            'extracted_topics': 'Topics are reviewed after the document is uploaded.',
-            'is_active': 'The syllabus is activated only after its extracted topics are reviewed.',
         }
+
+    def clean_file(self):
+        uploaded_file = self.cleaned_data['file']
+        if uploaded_file.size > 10 * 1024 * 1024:
+            raise forms.ValidationError('Documents must be 10 MB or smaller.')
+        extension = os.path.splitext(uploaded_file.name)[1].lower()
+        if extension not in self.SUPPORTED_CURRICULUM_EXTENSIONS:
+            raise forms.ValidationError(
+                'Upload a PDF, DOCX, PPTX, XLSX, CSV, TXT, or scanned image file.'
+            )
+        return uploaded_file
 
     def clean(self):
         cleaned_data = super().clean()
         class_ref = cleaned_data.get('class_ref')
         subject = cleaned_data.get('subject')
+        if class_ref and not subject:
+            subject_id = self.data.get(self.add_prefix('subject'))
+            if subject_id:
+                try:
+                    subject = Subject.objects.get(pk=subject_id)
+                except (Subject.DoesNotExist, ValueError, TypeError):
+                    subject = None
         if class_ref and subject and subject.class_ref_id != class_ref.id:
             self.add_error('subject', 'Choose a subject linked to the selected class.')
         return cleaned_data

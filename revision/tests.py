@@ -149,6 +149,44 @@ class StaffResourceUploadTests(TestCase):
         self.assertEqual(curriculum.extracted_topics, 'Living things\nLearning outcomes')
         curriculum.file.delete(save=False)
 
+    def test_curriculum_upload_requires_linked_subject_and_supported_file(self):
+        other_class = Class.objects.create(
+            name='Grade 7',
+            curriculum='cbe',
+            level='secondary',
+        )
+        other_subject = Subject.objects.create(
+            class_ref=other_class,
+            name='Agriculture',
+        )
+        response = self.client.post(
+            reverse('staff_upload_resource', args=['curriculum']),
+            {
+                'class_ref': self.class_ref.pk,
+                'subject': other_subject.pk,
+                'curriculum_type': 'cbc',
+                'academic_year': '2026',
+                'file': SimpleUploadedFile('science-curriculum.pdf', b'pdf'),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Choose a subject linked to the selected class.')
+        self.assertFalse(Curriculum.objects.filter(subject=other_subject).exists())
+
+        response = self.client.post(
+            reverse('staff_upload_resource', args=['curriculum']),
+            {
+                'class_ref': self.class_ref.pk,
+                'subject': self.subject.pk,
+                'curriculum_type': 'cbc',
+                'academic_year': '2026',
+                'file': SimpleUploadedFile('science-curriculum.exe', b'executable'),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Upload a PDF, DOCX, PPTX, XLSX, CSV, TXT')
+        self.assertFalse(Curriculum.objects.filter(subject=self.subject).exists())
+
     @patch(
         'revision.views.extract_document_text',
         side_effect=ValueError('No readable text was found in the document.'),
